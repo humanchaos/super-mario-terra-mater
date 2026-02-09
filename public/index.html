@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Super Mario - Terra Mater Studios Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@600;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header>
+        <h1>Super Mario - Terra Mater Studios Edition</h1>
+        <p>
+          Help Mario lead sustainability transformation where former adversaries can become allies.
+        </p>
+      </header>
+      <section class="hud-top">
+        <div><span id="credits">0</span> Impact Credits</div>
+        <div>Lives: <span id="lives">3</span></div>
+        <div>Transformation: <span id="progress">0%</span></div>
+        <div>Carbon: <span id="carbon">0</span></div>
+        <div>Greenness: <span id="greenness">0%</span></div>
+      </section>
+      <canvas id="game" width="960" height="540" aria-label="Mario Sustainability Game"></canvas>
+      <section class="hud-bottom">
+        <p id="stageText">Stage: Kickoff - Build urgency and align leadership.</p>
+        <p class="controls">Controls: A/D or Arrow keys run, W/Up/Space jump, Shift dash (with Wind), P photo mode, F filter, C capture, R restart.</p>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
