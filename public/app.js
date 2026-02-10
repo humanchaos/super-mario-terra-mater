@@ -250,11 +250,12 @@ const sound = createSoundEngine();
 const keys = { left: false, right: false, up: false };
 
 const stageMilestones = [
-  { x: 0, text: "Stage: Kickoff - Build urgency and align leadership." },
-  { x: 980, text: "Stage: Carbon Baseline - Clean up fragmented data systems." },
-  { x: 2200, text: "Stage: Supplier Transition - Push Scope 3 transparency." },
-  { x: 3550, text: "Stage: Green Operations - Retrofit energy and logistics." },
-  { x: 4700, text: "Stage: Disclosure - Make audit-ready ESG reporting routine." }
+  { x: 0, text: "Act I: The Ordinary World — Another day at Terra Mater Studios." },
+  { x: 500, text: "Act II: The Call — The mission: become the most sustainable film production company." },
+  { x: 980, text: "Act III: The Resistance — Adversaries block the transformation at every turn." },
+  { x: 2200, text: "Act IV: Allies Emerge — Good spirits join your cause one by one." },
+  { x: 3550, text: "Act V: The Transformation — Your team grows, adversaries crumble." },
+  { x: 4700, text: "Act VI: The New World — Terra Mater Studios is a green pioneer." }
 ];
 
 const playerStart = { x: 80, y: 400 };
@@ -402,28 +403,28 @@ function resetGame(fullReset = true) {
       "Schnitzel is non-negotiable!",
       "Plant-based? Not today!"
     ], "Okay fine, I will test veggie Mondays."),
-    enemy(1370, 430, 1280, 1560, "CEO Walter: keeps driving a Diesel SUV", "walter", 1.0, true, 3, [
-      "My Diesel SUV is a status symbol!",
-      "Show me ROI first!"
-    ], "I will lead by example and switch the fleet."),
-    enemy(2190, 430, 2100, 2480, "Markus: keeps flying transatlantic", "markus", 1.2, true, 3, [
-      "Video calls are boring!",
-      "Frequent flyer forever!"
-    ], "Fine. Rail + remote first policy from now on."),
-    enemy(3050, 438, 2960, 3320, "Colleague: refuses public transport", "commuter", 1.0, false, 1, [
-      "Bus is too crowded!",
-      "My car, my freedom!"
-    ], "Carpooling and transit pass accepted."),
-    enemy(3920, 438, 3840, 4200, "Office mate: wants 25 C indoors", "thermostat", 0.95, false, 1, [
-      "I need tropical office weather!",
-      "22 C feels cold!"
-    ], "Okay, smart zones + sweaters it is.")
+    enemy(1370, 430, 1280, 1560, "CEO Walter: insists on flying the whole crew", "walter", 1.0, true, 3, [
+      "Budget over planet!",
+      "We always flew the crew!"
+    ], "Fine. Local crews + virtual scouting it is."),
+    enemy(2190, 430, 2100, 2480, "Markus: prints every script on paper", "markus", 1.2, true, 3, [
+      "Digital is unreliable!",
+      "I need to hold the pages!"
+    ], "Okay, tablets for everyone. Less paper, more trees."),
+    enemy(3050, 438, 2960, 3320, "Producer: demands diesel generators on set", "commuter", 1.0, false, 1, [
+      "Green power is too expensive!",
+      "We need reliable generators!"
+    ], "Hybrid power trucks accepted. Clean energy on every set."),
+    enemy(3920, 438, 3840, 4200, "Set designer: overuses single-use props", "thermostat", 0.95, false, 1, [
+      "Reusable props look cheap!",
+      "I need fresh materials!"
+    ], "Sustainable prop workshop it is.")
   ];
 
   gates = [
-    gate(1500, "Build reliable baseline data", 3, 0),
-    gate(3010, "Align suppliers on Scope 3", 7, 1),
-    gate(4610, "Pass compliance disclosure", 10, 2)
+    gate(1500, "Cross the Threshold — Commit to the mission", 3, 0),
+    gate(3010, "The Ordeal — Prove the concept works", 7, 1),
+    gate(4610, "The Final Test — Win over the last holdouts", 10, 2)
   ];
 
   flags = [{ x: 5480, y: 300, width: 24, height: 170 }];
@@ -458,6 +459,22 @@ function resetGame(fullReset = true) {
   };
 
   updateHud();
+
+  // Opening prologue cutscene on first start
+  if (fullReset) {
+    cutscene = {
+      active: true,
+      type: "prologue",
+      title: "Prologue — Terra Mater Studios",
+      pages: [
+        "Another ordinary day at Terra Mater Studios. Coffee in hand, scripts on the desk.",
+        "But a bold vision takes hold: What if we became the most sustainable film production company in the world?",
+        "The journey begins. Not everyone will be on board — but every transformation starts with one step."
+      ],
+      index: 0,
+      portraits: [{ name: "Mario", type: "mario" }]
+    };
+  }
 }
 
 function coin(x, y) {
@@ -600,17 +617,17 @@ function updateHud() {
   if (activePowerups.magnet > 0) activePower.push("Recycling Magnet");
   if (activePowerups.doubleJump > 0) activePower.push("Heat-Pump Double Jump");
 
-  if (guardians.active) activeStage = "Josy and Nina entered rescue mode.";
-  if (supportTeam.active) activeStage = "Irene, Sirna, Denise and Roland joined as support squad.";
-  if (allies.length) activeStage = `${allies.length} former adversaries run with Mario. Vehicle: ${getVehicleStats().label}.`;
+  if (guardians.active) activeStage = "Act IV: Josy and Nina joined the transformation team.";
+  if (supportTeam.active && supportTeam.members.length > 0) activeStage = `Act IV: ${supportTeam.members.length} allies have joined the cause.`;
+  if (allies.length) activeStage = `Act V: ${allies.length} former adversaries now fight alongside you. The team grows!`;
   if (activePower.length) activeStage += ` Power-ups: ${activePower.join(", ")}.`;
 
   if (storm.type) activeStage = `Carbon Storm (${storm.type}) active. Adapt quickly.`;
   if (photoMode) activeStage = `Photo Mode [P]: paused. [F] filter ${photoFilterIndex + 1}/${PHOTO_FILTERS.length}, [C] capture.`;
   if (cutscene && cutscene.active) activeStage = "Cutscene active: press Enter/Space to continue.";
 
-  if (gameLost) activeStage = "Transformation stalled. Press R to relaunch the program.";
-  if (gameWon) activeStage = `${endingText} Parade mode active: team runs together.`;
+  if (gameLost) activeStage = "The resistance won this round. Press R to begin the journey again.";
+  if (gameWon) activeStage = `Act VI: ${endingText} Parade mode — the team celebrates together.`;
 
   ui.stageText.textContent = activeStage;
 }
@@ -923,32 +940,32 @@ function getEndingOutcome() {
   if (carbonEmitted < 24 && allies.length >= 5) {
     return {
       key: "regeneration",
-      text: "Regeneration Ending: Terra Mater becomes climate-positive.",
+      text: "The Return: Terra Mater Studios becomes a beacon of sustainable filmmaking.",
       pages: [
-        "Cities around the network turned greener quarter by quarter.",
-        "Former adversaries became internal climate champions.",
-        "Terra Mater Studios entered a regenerative growth era."
+        "Every set runs on clean energy. Every crew member is an ambassador.",
+        "Former adversaries became the loudest champions of change.",
+        "Terra Mater Studios is now a model for the entire industry."
       ]
     };
   }
   if (carbonEmitted < 45 && allies.length >= 3) {
     return {
       key: "transition",
-      text: "Transition Ending: Team alignment delivers durable decarbonization.",
+      text: "The Transformation: The company changed for good, one ally at a time.",
       pages: [
-        "The transformation stayed on track under mixed market pressure.",
-        "Cross-functional teams aligned on execution instead of blame.",
-        "The company moved from promises to durable implementation."
+        "The transformation held strong even under industry pressure.",
+        "Teams aligned on action instead of excuses.",
+        "Terra Mater moved from ambition to lasting implementation."
       ]
     };
   }
   return {
     key: "compliance",
-    text: "Compliance Ending: Progress made, but deeper transformation remains.",
+    text: "Partial Victory: The seed is planted, but deep change needs a second season.",
     pages: [
-      "Reporting quality improved and basic compliance was achieved.",
-      "Some high-impact habits still resisted full replacement.",
-      "A second transformation wave is needed for deep decarbonization."
+      "Some habits shifted, and awareness spread across the company.",
+      "But not every adversary was convinced — resistance lingers.",
+      "The hero's journey is not over. A sequel awaits."
     ]
   };
 }
@@ -958,11 +975,11 @@ function startBossIntroCutscene(mob) {
   cutscene = {
     active: true,
     type: "boss_intro",
-    title: `${label} - Boardroom Boss Intro`,
+    title: `${label} — A Major Adversary Appears`,
     pages: [
-      `${label} blocks the transformation agenda.`,
-      "Defeat all boss phases by jumping on top with precise timing.",
-      "Resilience beats resistance. Press Enter to continue."
+      `${label} stands in the way of transformation.`,
+      "Defeat all phases by jumping on top with precise timing.",
+      "Every hero faces resistance. Press Enter to continue."
     ],
     index: 0,
     portraits: [{ name: label, type: mob.type }, { name: "Mario", type: "mario" }]
