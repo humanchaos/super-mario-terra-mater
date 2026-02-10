@@ -534,7 +534,7 @@ function enemy(x, y, minX, maxX, label, type, speed, boss, hp, lines, convertedL
     converted: false,
     introduced: false,
     phase: Math.random() * Math.PI * 2,
-    talkCooldown: 280 + Math.floor(Math.random() * 440)
+    talkCooldown: 600 + Math.floor(Math.random() * 700)
   };
 }
 
@@ -886,7 +886,7 @@ function handleEnemies() {
 
     mob.talkCooldown -= 1;
     if (mob.talkCooldown <= 0) {
-      mob.talkCooldown = 360 + Math.floor(Math.random() * 440);
+      mob.talkCooldown = 600 + Math.floor(Math.random() * 700);
       const line = mob.lines[Math.floor(Math.random() * mob.lines.length)];
       spawnDialogue(line, mob.x - 26, mob.y - 12, "rgba(255,245,220,1)");
     }
