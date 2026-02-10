@@ -23,7 +23,7 @@ const ui = {
   stageText: document.getElementById("stageText")
 };
 
-const WORLD_WIDTH = 5600;
+const WORLD_WIDTH = 6800;
 const GROUND_Y = 470;
 const DAY_LENGTH = 28000;
 const TILE = 32;
@@ -380,7 +380,7 @@ function resetGame(fullReset = true) {
     { x: 0, y: GROUND_Y, width: 820, height: 100, type: "ground" },
     { x: 900, y: GROUND_Y, width: 650, height: 100, type: "ground" },
     { x: 1640, y: GROUND_Y, width: 500, height: 100, type: "ground" },
-    { x: 2220, y: GROUND_Y, width: 810, height: 100, type: "ground" },
+    { x: 2220, y: GROUND_Y, width: 860, height: 100, type: "ground" },
     { x: 3130, y: GROUND_Y, width: 780, height: 100, type: "ground" },
     { x: 4020, y: GROUND_Y, width: 610, height: 100, type: "ground" },
     { x: 4700, y: GROUND_Y, width: 600, height: 100, type: "ground" },
@@ -402,8 +402,8 @@ function resetGame(fullReset = true) {
 
   credits = [
     coin(330, 360), coin(560, 350), coin(610, 350), coin(1090, 360), coin(1140, 360),
-    coin(1380, 345), coin(1880, 355), coin(2470, 350), coin(2730, 340), coin(3380, 350),
-    coin(4340, 355), coin(4890, 345), coin(5200, 420)
+    coin(1380, 345), coin(1880, 355), coin(2470, 350), coin(2730, 340), coin(2950, 430),
+    coin(3380, 350), coin(4340, 355), coin(4890, 345), coin(5200, 420)
   ];
 
   enemies = [
@@ -652,7 +652,7 @@ function updateHud() {
 
   if (storm.type) activeStage = `Carbon Storm (${storm.type}) active. Adapt quickly.`;
   if (photoMode) activeStage = `Photo Mode [P]: paused. [F] filter ${photoFilterIndex + 1}/${PHOTO_FILTERS.length}, [C] capture.`;
-  if (cutscene && cutscene.active) activeStage = "Cutscene active: press Enter/Space to continue.";
+  if (cutscene && cutscene.active) activeStage = "Cutscene active: press Enter/Space or tap to continue.";
 
   if (gameLost) activeStage = "The resistance won this round. Press R to begin the journey again.";
   if (gameWon) activeStage = `Act VI: ${endingText} Parade mode — the team celebrates together.`;
@@ -721,13 +721,13 @@ function applyInput() {
     }
   }
 
-  if (keys.up && player.onGround) {
+  if (keys.up && player.onGround && !miniGame) {
     player.vy = physics.jump;
     player.onGround = false;
     player.doubleJumpUsed = false;
     spawnDust(player.x + player.width / 2, player.y + player.height, 6);
     sound.jump();
-  } else if (keys.up && !player.onGround && activePowerups.doubleJump > 0 && !player.doubleJumpUsed) {
+  } else if (keys.up && !player.onGround && activePowerups.doubleJump > 0 && !player.doubleJumpUsed && !miniGame) {
     player.vy = physics.jump * 0.95;
     player.doubleJumpUsed = true;
     spawnSparkle(player.x + player.width / 2, player.y + player.height / 2, "rgba(255,145,84,1)");
@@ -1060,10 +1060,7 @@ function startBossIntroCutscene(mob) {
 function startEndingEpilogueCutscene(ending) {
   const portraits = [{ name: "Mario", type: "mario" }];
   if (supportTeam.active) {
-    portraits.push({ name: "Irene", type: "support_irene" });
-    portraits.push({ name: "Sirna", type: "support_sirna" });
-    portraits.push({ name: "Denise", type: "support_denise" });
-    portraits.push({ name: "Roland", type: "support_roland" });
+    supportTeam.members.forEach((m) => portraits.push({ name: m.name, type: m.type }));
   }
   portraits.push({ name: "Josy", type: "guardian_josy" });
   portraits.push({ name: "Nina", type: "guardian_nina" });
@@ -1611,7 +1608,6 @@ function drawEnemies() {
     }
 
     if (mob.boss) {
-      const isFinal = mob.type === "finalboss";
       const barW = isFinal ? 100 : 60;
       sctx.fillStyle = "rgba(255,255,255,0.86)";
       roundedRect(sctx, drawX - 4, bodyY - 20, barW, 8, 3);
@@ -2528,10 +2524,7 @@ function setupTouchControls() {
   canvas.addEventListener("touchstart", (e) => {
     if (cutscene && cutscene.active) {
       e.preventDefault();
-      cutscene.index += 1;
-      if (cutscene.index >= cutscene.pages.length) {
-        cutscene.active = false;
-      }
+      advanceCutscene();
     }
   }, { passive: false });
 }
