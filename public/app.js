@@ -66,6 +66,187 @@ const MINI_GAME_LIBRARY = [
   }
 ];
 
+function createSoundEngine() {
+  const audio = {
+    ctx: null,
+    master: null,
+    unlocked: false,
+    muted: false,
+    bgmTime: 0,
+    bgmStep: 0
+  };
+
+  const scale = [60, 64, 67, 72, 67, 64, 62, 64];
+  const bass = [48, 48, 55, 55, 53, 53, 50, 50];
+
+  function ensure() {
+    if (audio.ctx) return true;
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) return false;
+    audio.ctx = new AudioContextCtor();
+    audio.master = audio.ctx.createGain();
+    audio.master.gain.value = 0.28;
+    audio.master.connect(audio.ctx.destination);
+    return true;
+  }
+
+  function midiToHz(midi) {
+    return 440 * 2 ** ((midi - 69) / 12);
+  }
+
+  function tone(freq, duration, type = "square", volume = 0.18, when = 0) {
+    if (!audio.unlocked || audio.muted || !ensure()) return;
+    const t0 = audio.ctx.currentTime + when;
+    const osc = audio.ctx.createOscillator();
+    const gain = audio.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    osc.connect(gain);
+    gain.connect(audio.master);
+    osc.start(t0);
+    osc.stop(t0 + duration + 0.02);
+  }
+
+  function slide(startFreq, endFreq, duration, type = "square", volume = 0.18, when = 0) {
+    if (!audio.unlocked || audio.muted || !ensure()) return;
+    const t0 = audio.ctx.currentTime + when;
+    const osc = audio.ctx.createOscillator();
+    const gain = audio.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(startFreq, t0);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(30, endFreq), t0 + duration);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    osc.connect(gain);
+    gain.connect(audio.master);
+    osc.start(t0);
+    osc.stop(t0 + duration + 0.03);
+  }
+
+  function noise(duration = 0.08, volume = 0.1, when = 0) {
+    if (!audio.unlocked || audio.muted || !ensure()) return;
+    const len = Math.floor(audio.ctx.sampleRate * duration);
+    const buffer = audio.ctx.createBuffer(1, len, audio.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < len; i += 1) data[i] = Math.random() * 2 - 1;
+    const source = audio.ctx.createBufferSource();
+    source.buffer = buffer;
+    const filter = audio.ctx.createBiquadFilter();
+    filter.type = "highpass";
+    filter.frequency.value = 900;
+    const gain = audio.ctx.createGain();
+    const t0 = audio.ctx.currentTime + when;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(audio.master);
+    source.start(t0);
+    source.stop(t0 + duration + 0.02);
+  }
+
+  return {
+    unlock() {
+      if (!ensure()) return;
+      if (audio.ctx.state === "suspended") audio.ctx.resume();
+      audio.unlocked = true;
+      if (audio.bgmTime <= audio.ctx.currentTime) audio.bgmTime = audio.ctx.currentTime + 0.02;
+    },
+    isUnlocked() {
+      return audio.unlocked;
+    },
+    toggleMute() {
+      audio.muted = !audio.muted;
+    },
+    jump() {
+      slide(540, 290, 0.15, "square", 0.18);
+    },
+    doubleJump() {
+      slide(780, 340, 0.17, "triangle", 0.2);
+    },
+    coin() {
+      tone(988, 0.07, "square", 0.16);
+      tone(1319, 0.08, "square", 0.13, 0.05);
+    },
+    stomp() {
+      tone(170, 0.09, "triangle", 0.2);
+      noise(0.05, 0.08);
+    },
+    bossHit() {
+      tone(220, 0.08, "sawtooth", 0.22);
+      tone(164, 0.11, "square", 0.16, 0.07);
+    },
+    hurt() {
+      slide(280, 120, 0.24, "square", 0.2);
+      noise(0.08, 0.07, 0.02);
+    },
+    shield() {
+      tone(740, 0.05, "triangle", 0.16);
+      tone(1175, 0.07, "triangle", 0.13, 0.06);
+    },
+    powerup() {
+      [660, 784, 988, 1175].forEach((f, i) => tone(f, 0.08, "square", 0.14, i * 0.05));
+    },
+    dash() {
+      noise(0.07, 0.06);
+      slide(720, 420, 0.12, "square", 0.14);
+    },
+    gate() {
+      [392, 494, 587].forEach((f, i) => tone(f, 0.1, "triangle", 0.12, i * 0.06));
+    },
+    miniTick() {
+      tone(990, 0.045, "square", 0.1);
+    },
+    miniSuccess() {
+      [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.09, "square", 0.14, i * 0.05));
+    },
+    miniFail() {
+      slide(420, 180, 0.22, "square", 0.14);
+    },
+    storm() {
+      noise(0.2, 0.07);
+      tone(140, 0.12, "sawtooth", 0.1, 0.05);
+    },
+    bossIntro() {
+      [262, 196, 147].forEach((f, i) => tone(f, 0.18, "sawtooth", 0.12, i * 0.11));
+    },
+    win() {
+      [523, 659, 784, 988, 1319].forEach((f, i) => tone(f, 0.11, "square", 0.16, i * 0.08));
+    },
+    kitchen() {
+      tone(523, 0.05, "triangle", 0.1);
+      tone(659, 0.05, "triangle", 0.08, 0.05);
+    },
+    cutsceneNext() {
+      tone(880, 0.04, "square", 0.08);
+    },
+    updateBgm() {
+      if (!audio.unlocked || audio.muted || !ensure()) return;
+      if (audio.ctx.state === "suspended") return;
+      const stepDur = 0.17;
+      const lookAhead = 0.33;
+      while (audio.bgmTime < audio.ctx.currentTime + lookAhead) {
+        const n = scale[audio.bgmStep % scale.length];
+        const b = bass[audio.bgmStep % bass.length];
+        tone(midiToHz(n), 0.12, "square", 0.05, audio.bgmTime - audio.ctx.currentTime);
+        tone(midiToHz(b), 0.14, "triangle", 0.045, audio.bgmTime - audio.ctx.currentTime + 0.02);
+        if (audio.bgmStep % 4 === 2) {
+          noise(0.02, 0.025, audio.bgmTime - audio.ctx.currentTime + 0.12);
+        }
+        audio.bgmStep += 1;
+        audio.bgmTime += stepDur;
+      }
+    }
+  };
+}
+
+const sound = createSoundEngine();
+
 const keys = { left: false, right: false, up: false };
 
 const stageMilestones = [
@@ -89,6 +270,7 @@ let decorations;
 let particles;
 let allies;
 let guardians;
+let supportTeam;
 let powerups;
 let storm;
 let miniGame;
@@ -161,6 +343,20 @@ function resetGame(fullReset = true) {
     members: [
       { name: "Josy", x: playerStart.x - 26, y: playerStart.y - 60, phase: 0, color: "rgba(138,232,173,1)" },
       { name: "Nina", x: playerStart.x + 26, y: playerStart.y - 60, phase: Math.PI, color: "rgba(145,196,255,1)" }
+    ]
+  };
+
+  supportTeam = {
+    active: false,
+    assistTick: 90,
+    cleanTick: 210,
+    members: [
+      { name: "Irene", type: "support_irene", x: playerStart.x - 70, y: playerStart.y - 24, phase: 0, role: "warrior", color: "rgba(218,171,255,1)" },
+      { name: "Sirna", type: "support_sirna", x: playerStart.x - 96, y: playerStart.y - 20, phase: Math.PI / 2, role: "warrior", color: "rgba(141,216,255,1)" },
+      { name: "Denise", type: "support_denise", x: playerStart.x - 122, y: playerStart.y - 16, phase: Math.PI, role: "warrior", color: "rgba(156,245,191,1)" },
+      { name: "Susanne", type: "support_susanne", x: playerStart.x - 136, y: playerStart.y - 14, phase: Math.PI * 1.2, role: "warrior", color: "rgba(255,196,228,1)" },
+      { name: "Traude", type: "support_traude", x: playerStart.x - 142, y: playerStart.y - 10, phase: Math.PI * 1.3, role: "warrior", color: "rgba(187,224,255,1)" },
+      { name: "Roland", type: "support_roland", x: playerStart.x - 148, y: playerStart.y - 12, phase: Math.PI * 1.4, role: "cleaner", color: "rgba(255,220,152,1)" }
     ]
   };
 
@@ -402,6 +598,7 @@ function updateHud() {
   if (activePowerups.doubleJump > 0) activePower.push("Heat-Pump Double Jump");
 
   if (guardians.active) activeStage = "Josy and Nina entered rescue mode.";
+  if (supportTeam.active) activeStage = "Irene, Sirna, Denise and Roland joined as support squad.";
   if (allies.length) activeStage = `${allies.length} former adversaries run with Mario. Vehicle: ${getVehicleStats().label}.`;
   if (activePower.length) activeStage += ` Power-ups: ${activePower.join(", ")}.`;
 
@@ -478,10 +675,12 @@ function applyInput() {
     player.onGround = false;
     player.doubleJumpUsed = false;
     spawnDust(player.x + player.width / 2, player.y + player.height, 6);
+    sound.jump();
   } else if (keys.up && !player.onGround && activePowerups.doubleJump > 0 && !player.doubleJumpUsed) {
     player.vy = physics.jump * 0.95;
     player.doubleJumpUsed = true;
     spawnSparkle(player.x + player.width / 2, player.y + player.height / 2, "rgba(255,145,84,1)");
+    sound.doubleJump();
   }
 
   if (morale < 32 && funnyMistakeCooldown <= 0 && Math.random() < 0.006) {
@@ -554,6 +753,7 @@ function handlePowerups() {
     }
 
     spawnSparkle(p.x, p.y, "rgba(111,255,182,1)");
+    sound.powerup();
   }
 
   activePowerups.solarShield = Math.max(0, activePowerups.solarShield - 1);
@@ -586,6 +786,7 @@ function handleCredits() {
       morale = clamp(morale + 1.5, 0, 100);
       carbonEmitted = clamp(carbonEmitted - 2.2, 0, 100);
       spawnSparkle(c.x, c.y, "rgba(255,214,85,1)");
+      sound.coin();
       updateHud();
     }
   }
@@ -623,6 +824,7 @@ function handleEnemies() {
         carbonEmitted = clamp(carbonEmitted - 3.2, 0, 100);
         spawnSparkle(mob.x + mob.width / 2, mob.y + mob.height / 2, "rgba(255,167,108,1)");
         spawnDialogue(`Boss hit! ${mob.hp} phases left.`, mob.x - 20, mob.y - 18, "rgba(255,209,164,1)");
+        sound.bossHit();
       } else {
         convertEnemyToAlly(mob);
         player.vy = -8;
@@ -648,6 +850,7 @@ function startMiniGame(gateObj) {
     progress: 0
   };
   spawnDialogue(config.title, player.x - 30, player.y - 24, "rgba(222,236,255,1)");
+  sound.miniTick();
 }
 
 function handleMiniGameTick() {
@@ -659,6 +862,7 @@ function handleMiniGameTick() {
     const gateObj = gates.find((g) => g.x === miniGame.gateX);
     if (gateObj) gateObj.miniGameRetryCooldown = 180;
     spawnDialogue("Mini-game failed. Try again.", player.x - 40, player.y - 24, "rgba(255,170,170,1)");
+    sound.miniFail();
     miniGame = null;
   }
 }
@@ -689,6 +893,7 @@ function handleGates() {
     morale = clamp(morale + 7, 0, 100);
     carbonEmitted = clamp(carbonEmitted - 4.5, 0, 100);
     spawnSparkle(g.x + g.width / 2, g.y + 20, "rgba(111,255,182,1)");
+    sound.gate();
     updateHud();
   }
 }
@@ -706,6 +911,7 @@ function handleFlag() {
     spawnSparkle(flag.x + 20, flag.y + 12, "rgba(80,255,140,1)");
     spawnDialogue(endingText, flag.x - 80, flag.y - 25, "rgba(222,255,233,1)");
     startEndingEpilogueCutscene(ending);
+    sound.win();
     updateHud();
   }
 }
@@ -758,13 +964,20 @@ function startBossIntroCutscene(mob) {
     index: 0,
     portraits: [{ name: label, type: mob.type }, { name: "Mario", type: "mario" }]
   };
+  sound.bossIntro();
 }
 
 function startEndingEpilogueCutscene(ending) {
   const portraits = [{ name: "Mario", type: "mario" }];
-  allies.slice(0, 4).forEach((ally) => portraits.push({ name: ally.name, type: ally.type }));
+  if (supportTeam.active) {
+    portraits.push({ name: "Irene", type: "support_irene" });
+    portraits.push({ name: "Sirna", type: "support_sirna" });
+    portraits.push({ name: "Denise", type: "support_denise" });
+    portraits.push({ name: "Roland", type: "support_roland" });
+  }
   portraits.push({ name: "Josy", type: "guardian_josy" });
   portraits.push({ name: "Nina", type: "guardian_nina" });
+  allies.slice(0, 4).forEach((ally) => portraits.push({ name: ally.name, type: ally.type }));
 
   cutscene = {
     active: true,
@@ -778,6 +991,7 @@ function startEndingEpilogueCutscene(ending) {
 
 function advanceCutscene() {
   if (!cutscene || !cutscene.active) return;
+  sound.cutsceneNext();
   cutscene.index += 1;
   if (cutscene.index >= cutscene.pages.length) {
     cutscene = null;
@@ -790,6 +1004,7 @@ function loseLife() {
     invulnerableTimer = 120;
     spawnDialogue("Solar shield absorbed impact.", player.x - 40, player.y - 20, "rgba(255,234,155,1)");
     spawnSparkle(player.x + player.width / 2, player.y + player.height / 2, "rgba(255,224,104,1)");
+    sound.shield();
     return;
   }
 
@@ -810,6 +1025,7 @@ function loseLife() {
 
   carbonEmitted = clamp(carbonEmitted + 6.2, 0, 100);
   spawnSparkle(player.x + player.width / 2, player.y + player.height / 2, "rgba(255,120,120,1)");
+  sound.hurt();
   player.x = player.checkpointX;
   player.y = 350;
   player.vx = 0;
@@ -832,6 +1048,7 @@ function convertEnemyToAlly(mob) {
   });
   maybeUnlockVehicles();
   spawnDialogue(mob.convertedLine, mob.x - 42, mob.y - 20, "rgba(178,255,209,1)");
+  sound.stomp();
 }
 
 function updateAllies() {
@@ -855,14 +1072,74 @@ function updateGuardians() {
   });
 }
 
+function maybeActivateSupportTeam() {
+  if (supportTeam.active) return;
+  const activeBossPressure = enemies
+    .filter((mob) => mob.alive && mob.boss)
+    .reduce((sum, mob) => sum + mob.hp, 0);
+  const activeAdversaries = enemies.filter((mob) => mob.alive).length;
+  const pressureHigh = activeBossPressure >= 3 || activeAdversaries >= 3;
+  const dire = player.lives <= 2 || morale < 45 || carbonEmitted > 72;
+
+  if (pressureHigh && dire) {
+    supportTeam.active = true;
+    supportTeam.assistTick = 40;
+    supportTeam.cleanTick = 140;
+    spawnDialogue("Irene, Sirna, Denise and Roland: We have your back!", player.x - 52, player.y - 34, "rgba(210,235,255,1)");
+  }
+}
+
+function updateSupportTeam() {
+  if (!supportTeam.active) return;
+
+  supportTeam.members.forEach((member, i) => {
+    member.phase += 0.045 + i * 0.01;
+    const radius = 58 + i * 16;
+    member.x = player.x + player.width / 2 - 24 + Math.cos(member.phase) * radius;
+    member.y = player.y - 8 + Math.sin(member.phase * 1.25) * (10 + i * 1.5);
+  });
+
+  supportTeam.assistTick -= 1;
+  if (supportTeam.assistTick <= 0) {
+    const target = enemies.find((mob) => mob.alive && Math.abs(mob.x - player.x) < 520);
+    if (target) {
+      if (target.boss && target.hp > 1) {
+        target.hp -= 1;
+        morale = clamp(morale + 3, 0, 100);
+        carbonEmitted = clamp(carbonEmitted - 2.4, 0, 100);
+        spawnSparkle(target.x + target.width / 2, target.y + target.height / 2, "rgba(168,219,255,1)");
+        spawnDialogue("Support strike! Boss pressure reduced.", target.x - 35, target.y - 20, "rgba(210,231,255,1)");
+      } else {
+        convertEnemyToAlly(target);
+        spawnDialogue("Support squad converted a blocker.", target.x - 34, target.y - 20, "rgba(177,255,211,1)");
+      }
+    }
+    supportTeam.assistTick = 110;
+  }
+
+  supportTeam.cleanTick -= 1;
+  if (supportTeam.cleanTick <= 0) {
+    morale = clamp(morale + 5, 0, 100);
+    carbonEmitted = clamp(carbonEmitted - 2.8, 0, 100);
+    const roland = supportTeam.members.find((m) => m.name === "Roland");
+    if (roland) {
+      spawnDialogue("Roland leads by example and cleans the kitchen.", roland.x - 58, roland.y - 24, "rgba(255,236,188,1)");
+      spawnSparkle(roland.x + 10, roland.y + 12, "rgba(255,220,152,1)");
+      sound.kitchen();
+    }
+    supportTeam.cleanTick = 360;
+  }
+}
+
 function updateCarbonDynamics() {
   const activeAdversaries = enemies.filter((mob) => mob.alive).length;
   const teamBenefit = allies.length * 0.0032;
   const gateBenefit = gates.filter((g) => g.passed).length * 0.0023;
   const guardianBenefit = guardians.active ? 0.004 : 0;
+  const supportBenefit = supportTeam.active ? 0.0055 : 0;
 
   carbonEmitted += activeAdversaries * 0.0024;
-  carbonEmitted -= teamBenefit + gateBenefit + guardianBenefit;
+  carbonEmitted -= teamBenefit + gateBenefit + guardianBenefit + supportBenefit;
 
   if (storm.type === "heatwave") carbonEmitted += 0.018;
   if (storm.type === "flood") carbonEmitted += 0.012;
@@ -898,6 +1175,7 @@ function updateStorms() {
     storm.type = types[Math.floor(Math.random() * types.length)];
     storm.timer = 520;
     spawnDialogue(`Carbon Storm: ${storm.type.toUpperCase()}`, player.x - 28, player.y - 32, "rgba(255,223,186,1)");
+    sound.storm();
   }
 }
 
@@ -1208,19 +1486,104 @@ function drawGuardians() {
   });
 }
 
+function drawSupportTeam() {
+  if (!supportTeam.active) return;
+  supportTeam.members.forEach((member, i) => {
+    const drawX = member.x - cameraX;
+    const sprite = atlas.sprites.support[member.type] || atlas.sprites.support.support_irene;
+    drawAtlas(sprite, drawX - 16, member.y - 16, 32, 32);
+    glowWorld(member.x, member.y, 20, rgbaWithAlpha(member.color, 0.45));
+    sctx.fillStyle = "rgba(255,255,255,0.9)";
+    sctx.font = "11px Nunito";
+    sctx.fillText(member.name, drawX - 12, member.y - 20 - (i % 2) * 4);
+  });
+}
+
 function drawDialogues() {
+  const visible = [];
+
   for (const p of particles) {
     if (!p.text) continue;
     const drawX = p.x - cameraX;
     const alpha = Math.max(0, p.life / p.maxLife);
-    sctx.font = "12px Nunito";
-    const tw = sctx.measureText(p.text).width;
-    sctx.fillStyle = `rgba(255,255,255,${alpha * 0.8})`;
-    roundedRect(sctx, drawX - 6, p.y - 14, tw + 12, 16, 4);
+
+    sctx.font = "800 15px Nunito";
+    const maxWidth = 250;
+    const words = p.text.split(" ");
+    const lines = [];
+    let current = "";
+
+    for (const word of words) {
+      const next = current ? `${current} ${word}` : word;
+      if (sctx.measureText(next).width > maxWidth && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = next;
+      }
+    }
+    if (current) lines.push(current);
+
+    const lineHeight = 17;
+    const textWidth = Math.max(...lines.map((line) => sctx.measureText(line).width));
+    const boxWidth = textWidth + 22;
+    const boxHeight = lines.length * lineHeight + 14;
+    const bx = clamp(drawX - boxWidth / 2, 10, canvas.width - boxWidth - 10);
+    const by = Math.max(8, p.y - boxHeight - 22);
+    const tailX = clamp(drawX, bx + 14, bx + boxWidth - 14);
+    const accent = `rgba(0, 0, 0, ${Math.max(0.92, alpha)})`;
+
+    sctx.fillStyle = `rgba(242, 247, 235, ${Math.max(0.98, alpha)})`;
+    roundedRect(sctx, bx, by, boxWidth, boxHeight, 8);
     sctx.fill();
-    sctx.fillStyle = rgbaWithAlpha(p.textColor || "rgba(26,31,47,1)", alpha);
-    sctx.fillText(p.text, drawX, p.y - 2);
+
+    sctx.strokeStyle = accent;
+    sctx.lineWidth = 2.4;
+    roundedRect(sctx, bx, by, boxWidth, boxHeight, 8);
+    sctx.stroke();
+
+    sctx.fillStyle = `rgba(242, 247, 235, ${Math.max(0.98, alpha)})`;
+    sctx.beginPath();
+    sctx.moveTo(tailX - 8, by + boxHeight - 1);
+    sctx.lineTo(tailX + 8, by + boxHeight - 1);
+    sctx.lineTo(tailX, by + boxHeight + 10);
+    sctx.closePath();
+    sctx.fill();
+    sctx.stroke();
+
+    sctx.fillStyle = `rgba(0, 0, 0, ${Math.max(0.99, alpha)})`;
+    sctx.shadowColor = "rgba(0, 0, 0, 0)";
+    lines.forEach((line, i) => {
+      const tx = bx + 11;
+      const ty = by + 18 + i * lineHeight;
+      sctx.fillText(line, tx, ty);
+    });
+
+    visible.push({ text: p.text, accent, alpha, life: p.life });
   }
+
+  visible.sort((a, b) => b.life - a.life);
+  const subtitles = visible.slice(0, 2);
+  subtitles.forEach((item, idx) => {
+    const y = 20 + idx * 42;
+    const padX = 12;
+    const maxW = canvas.width - 40;
+    sctx.font = "900 20px Nunito";
+    let text = item.text;
+    while (sctx.measureText(text).width > maxW && text.length > 12) {
+      text = `${text.slice(0, -2)}...`;
+    }
+    const w = sctx.measureText(text).width + padX * 2;
+    sctx.fillStyle = "rgba(244, 248, 238, 0.98)";
+    roundedRect(sctx, 20, y, w, 30, 8);
+    sctx.fill();
+    sctx.strokeStyle = "rgba(12,18,28,0.92)";
+    sctx.lineWidth = 2;
+    roundedRect(sctx, 20, y, w, 30, 8);
+    sctx.stroke();
+    sctx.fillStyle = "rgba(0,0,0,1)";
+    sctx.fillText(text, 20 + padX, y + 21);
+  });
 }
 
 function drawMiniGameOverlay() {
@@ -1365,6 +1728,9 @@ function drawPortraitCard(portrait, x, y) {
     drawAtlas(atlas.sprites.guardians[0], x + 18, y + 14, 36, 36, false);
   } else if (portrait.type === "guardian_nina") {
     drawAtlas(atlas.sprites.guardians[2], x + 18, y + 14, 36, 36, false);
+  } else if (portrait.type.startsWith("support_")) {
+    const sprite = atlas.sprites.support[portrait.type] || atlas.sprites.support.support_irene;
+    drawAtlas(sprite, x + 20, y + 16, 32, 32, false);
   } else {
     const frames = atlas.enemies[portrait.type] || atlas.enemies.toni;
     drawAtlas(frames[0], x + 18, y + 14, 36, 36, false);
@@ -1446,6 +1812,7 @@ function renderScene() {
   drawEnemies();
   drawAllies();
   drawGuardians();
+  drawSupportTeam();
   drawGates();
   drawFlag();
   drawPlayer();
@@ -1499,6 +1866,7 @@ function glowScreen(x, y, radius, color) {
 
 function tick() {
   frame += 1;
+  sound.updateBgm();
 
   if (!photoMode) {
     if (cutscene && cutscene.active) {
@@ -1511,11 +1879,13 @@ function tick() {
       handlePlatforms();
       handlePowerups();
       handleCredits();
+      maybeActivateSupportTeam();
       handleEnemies();
       handleGates();
       handleFlag();
       updateAllies();
       updateGuardians();
+      updateSupportTeam();
       updateStorms();
       updateCarbonDynamics();
       updateMoraleDynamics();
@@ -1531,6 +1901,7 @@ function tick() {
       updateParade();
       updateAllies();
       updateGuardians();
+      updateSupportTeam();
       updateParticles();
       updateCamera();
       updateHud();
@@ -1559,12 +1930,14 @@ function handleMiniGameKeyPress(k) {
 
   miniGame.progress += 1;
   spawnSparkle(player.x + player.width / 2, player.y - 5, "rgba(125,224,255,1)");
+  sound.miniTick();
 
   if (miniGame.progress >= miniGame.target) {
     morale = clamp(morale + 10, 0, 100);
     const gateObj = gates.find((g) => g.x === miniGame.gateX);
     if (gateObj) gateObj.miniGameDone = true;
     spawnDialogue("Mini-game success! Gate unlocked.", player.x - 40, player.y - 25, "rgba(177,255,211,1)");
+    sound.miniSuccess();
     miniGame = null;
   }
   return true;
@@ -1572,6 +1945,7 @@ function handleMiniGameKeyPress(k) {
 
 function keyDown(event) {
   const key = event.key.toLowerCase();
+  sound.unlock();
 
   if (cutscene && cutscene.active) {
     if (event.key === "Enter" || event.key === " ") {
@@ -1583,6 +1957,12 @@ function keyDown(event) {
   if (key === "p") {
     photoMode = !photoMode;
     updateHud();
+    return;
+  }
+
+  if (key === "m") {
+    sound.toggleMute();
+    spawnDialogue("Audio toggled.", player.x - 10, player.y - 20, "rgba(222,238,255,1)");
     return;
   }
 
@@ -1603,6 +1983,7 @@ function keyDown(event) {
     dashCooldown = 40;
     player.vx += player.facing * 8.5;
     spawnSparkle(player.x + player.width / 2, player.y + player.height / 2, "rgba(136,219,255,1)");
+    sound.dash();
   }
 
   if (key === "c") capturePhoto();
@@ -1679,6 +2060,7 @@ function buildAtlas() {
       flagGreen: [],
       pole: null,
       guardians: [],
+      support: {},
       vehicle: {},
       power: {}
     },
@@ -1859,6 +2241,26 @@ function buildAtlas() {
     map.sprites.guardians.push(s);
   }
 
+  const supportDefs = [
+    ["support_irene", "#dca8ff", "#6f4391", "IR"],
+    ["support_sirna", "#99d8ff", "#2b6485", "SI"],
+    ["support_denise", "#9ff2c2", "#2f7a57", "DE"],
+    ["support_roland", "#ffd69f", "#8f6231", "RO"]
+  ];
+
+  supportDefs.forEach((sDef, i) => {
+    const [name, c1, c2, txt] = sDef;
+    const s = slot(i + 10, 14, 32, 32);
+    drawPanelRect(s.x, s.y, s.w, s.h, c1, c2);
+    a.fillStyle = "rgba(255,255,255,0.22)";
+    roundedRect(a, s.x + 4, s.y + 4, s.w - 8, 10, 4);
+    a.fill();
+    a.fillStyle = "#1f2940";
+    a.font = "bold 10px monospace";
+    a.fillText(txt, s.x + 7, s.y + 22);
+    map.sprites.support[name] = s;
+  });
+
   const vehicleIcons = [
     ["foot", "#f8f8f8", "#475777", "FT"],
     ["bike", "#95ffb4", "#34734e", "BK"],
@@ -1900,6 +2302,8 @@ function buildAtlas() {
 
 window.addEventListener("keydown", keyDown);
 window.addEventListener("keyup", keyUp);
+window.addEventListener("pointerdown", () => sound.unlock(), { passive: true });
+window.addEventListener("touchstart", () => sound.unlock(), { passive: true });
 
 resetGame(true);
 tick();
