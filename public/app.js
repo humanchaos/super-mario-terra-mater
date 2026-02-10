@@ -1619,6 +1619,13 @@ function drawEnemies() {
       sctx.font = isFinal ? "bold 12px Nunito" : "10px Nunito";
       sctx.fillText(isFinal ? "⚠ FINAL BOSS" : "Boardroom Boss", drawX - 2, bodyY - 24);
     }
+
+    // Draw enemy name label
+    const enemyName = mob.label.split(":")[0];
+    sctx.fillStyle = "rgba(255,255,255,0.9)";
+    sctx.font = isFinal ? "bold 13px Nunito" : "11px Nunito";
+    const nameY = isFinal ? bodyY - 50 : mob.boss ? bodyY - 28 : bodyY - 8;
+    sctx.fillText(enemyName, drawX - 2, nameY);
   }
 }
 
