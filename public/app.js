@@ -294,6 +294,8 @@ let photoMode = false;
 let photoFilterIndex = 0;
 let funnyMistakeCooldown = 0;
 
+let prologuePlayed = false;
+
 function resetGame(fullReset = true) {
   player = {
     x: playerStart.x,
@@ -482,8 +484,9 @@ function resetGame(fullReset = true) {
 
   updateHud();
 
-  // Opening prologue cutscene on first start
-  if (fullReset) {
+  // Opening prologue cutscene on first-ever start only
+  if (fullReset && !prologuePlayed) {
+    prologuePlayed = true;
     cutscene = {
       active: true,
       type: "prologue",
@@ -849,6 +852,28 @@ function handleEnemies() {
     mob.x += mob.vx;
     if (mob.x <= mob.minX || mob.x + mob.width >= mob.maxX) mob.vx *= -1;
 
+    // Final boss throws barrel projectiles
+    if (mob.type === "finalboss" && mob.alive) {
+      if (!mob.barrelTimer) mob.barrelTimer = 0;
+      mob.barrelTimer += 1;
+      if (mob.barrelTimer >= 90) {
+        mob.barrelTimer = 0;
+        const dirX = player.x < mob.x ? -3.5 : 3.5;
+        particles.push({
+          x: mob.x + mob.width / 2,
+          y: mob.y + mob.height / 2,
+          vx: dirX + (Math.random() - 0.5),
+          vy: -2,
+          life: 180,
+          maxLife: 180,
+          color: "rgba(139,69,19,1)",
+          size: 12,
+          glow: false,
+          barrel: true
+        });
+      }
+    }
+
     mob.talkCooldown -= 1;
     if (mob.talkCooldown <= 0) {
       mob.talkCooldown = 180 + Math.floor(Math.random() * 220);
@@ -1096,6 +1121,8 @@ function convertEnemyToAlly(mob) {
   mob.converted = true;
   carbonEmitted = clamp(carbonEmitted - 7.5, 0, 100);
   morale = clamp(morale + 10, 0, 100);
+  const creditReward = mob.boss ? 3 : 2;
+  player.credits += creditReward;
   allies.push({
     name: mob.label.split(":")[0],
     type: mob.type,
@@ -1104,8 +1131,9 @@ function convertEnemyToAlly(mob) {
     phase: Math.random() * Math.PI * 2
   });
   maybeUnlockVehicles();
-  spawnDialogue(mob.convertedLine, mob.x - 42, mob.y - 20, "rgba(178,255,209,1)");
+  spawnDialogue(`+${creditReward} credits! ${mob.convertedLine}`, mob.x - 42, mob.y - 20, "rgba(178,255,209,1)");
   sound.stomp();
+  updateHud();
 }
 
 function updateAllies() {
@@ -1275,7 +1303,23 @@ function updateParticles() {
   for (const p of particles) {
     p.x += p.vx;
     p.y += p.vy;
-    if (!p.anchored) p.vy += 0.05;
+    if (p.barrel) {
+      p.vy += 0.15; // gravity for barrels
+      // Bounce off ground
+      if (p.y >= GROUND_Y - 6) {
+        p.y = GROUND_Y - 6;
+        p.vy = -Math.abs(p.vy) * 0.5;
+      }
+      // Damage player on collision
+      if (invulnerableTimer <= 0 &&
+        Math.abs(p.x - player.x - player.width / 2) < 22 &&
+        Math.abs(p.y - player.y - player.height / 2) < 22) {
+        loseLife();
+        p.life = 0;
+      }
+    } else {
+      if (!p.anchored) p.vy += 0.05;
+    }
     p.vx *= 0.99;
     p.life -= 1;
   }
@@ -1293,10 +1337,16 @@ function getDayRatio() {
 function drawBackground() {
   const dayRatio = getDayRatio();
   const greenness = getGreennessFactor();
+
+  // Act-based color tinting
+  const actProgress = clamp(player.x / 6480, 0, 1);
+  const greyTint = 1 - actProgress; // 1.0 at start (grey office), 0.0 at end (green nature)
   const skyTop = lerpColor([73, 143, 235], [255, 129, 104], Math.sin(dayRatio * Math.PI) * 0.35 + 0.2);
   const skyBottom = lerpColor([196, 234, 255], [255, 199, 165], Math.sin(dayRatio * Math.PI) * 0.3);
-  const ecoSkyTop = lerpColor(skyTop, [60, 166, 118], greenness * 0.2);
-  const ecoSkyBottom = lerpColor(skyBottom, [197, 247, 210], greenness * 0.35);
+  const actSkyTop = lerpColor(skyTop, [140, 150, 160], greyTint * 0.4);
+  const actSkyBottom = lerpColor(skyBottom, [180, 185, 190], greyTint * 0.3);
+  const ecoSkyTop = lerpColor(actSkyTop, [60, 166, 118], greenness * 0.2);
+  const ecoSkyBottom = lerpColor(actSkyBottom, [197, 247, 210], greenness * 0.35);
 
   const gradient = sctx.createLinearGradient(0, 0, 0, canvas.height);
   gradient.addColorStop(0, rgb(ecoSkyTop));
@@ -1326,8 +1376,8 @@ function drawBackground() {
   drawSkyline();
   drawEcoProps();
 
-  const groundTop = rgb(lerpColor([122, 149, 88], [93, 206, 105], greenness));
-  const groundBottom = rgb(lerpColor([79, 95, 64], [54, 142, 67], greenness));
+  const groundTop = rgb(lerpColor(lerpColor([122, 149, 88], [160, 160, 155], greyTint * 0.5), [93, 206, 105], greenness));
+  const groundBottom = rgb(lerpColor(lerpColor([79, 95, 64], [110, 110, 105], greyTint * 0.4), [54, 142, 67], greenness));
   const groundGrad = sctx.createLinearGradient(0, GROUND_Y + 40, 0, canvas.height);
   groundGrad.addColorStop(0, groundTop);
   groundGrad.addColorStop(1, groundBottom);
@@ -1360,8 +1410,29 @@ function drawCloud(x, y, scale, alpha) {
 
 function drawHills() {
   const greenness = getGreennessFactor();
+
+  // Far mountain layer (slowest parallax)
+  const farMountains = [
+    { x: 200, y: 440, w: 500, h: 200 },
+    { x: 900, y: 440, w: 600, h: 240 },
+    { x: 1800, y: 440, w: 450, h: 180 },
+    { x: 2600, y: 440, w: 550, h: 220 },
+    { x: 3600, y: 440, w: 500, h: 200 },
+    { x: 4800, y: 440, w: 600, h: 250 }
+  ];
+  for (const m of farMountains) {
+    const drawX = m.x - cameraX * 0.15;
+    sctx.fillStyle = mixHex("#8a9aaa", "#6aaa7a", greenness * 0.5);
+    sctx.globalAlpha = 0.35;
+    sctx.beginPath();
+    sctx.ellipse(drawX, m.y, m.w, m.h, 0, Math.PI, Math.PI * 2);
+    sctx.fill();
+    sctx.globalAlpha = 1;
+  }
+
+  // Mid hills (original layer, slightly adjusted parallax)
   for (const h of decorations.hills) {
-    const drawX = h.x - cameraX * 0.45;
+    const drawX = h.x - cameraX * 0.35;
     sctx.fillStyle = mixHex(h.color, "#4fd173", greenness * 0.7);
     sctx.beginPath();
     sctx.ellipse(drawX, h.y, h.width, h.height, 0, Math.PI, Math.PI * 2);
@@ -1760,6 +1831,26 @@ function drawParticles() {
     const drawX = p.x - cameraX;
     if (drawX < -20 || drawX > canvas.width + 20) continue;
     const alpha = Math.max(0, p.life / p.maxLife);
+
+    // Barrel rendering (boss projectile)
+    if (p.barrel) {
+      sctx.save();
+      sctx.translate(drawX, p.y);
+      sctx.rotate(frame * 0.15);
+      sctx.fillStyle = `rgba(139,69,19,${alpha})`;
+      sctx.beginPath();
+      sctx.arc(0, 0, 10, 0, Math.PI * 2);
+      sctx.fill();
+      sctx.strokeStyle = `rgba(90,40,10,${alpha})`;
+      sctx.lineWidth = 2;
+      sctx.beginPath();
+      sctx.moveTo(-10, 0); sctx.lineTo(10, 0);
+      sctx.moveTo(0, -10); sctx.lineTo(0, 10);
+      sctx.stroke();
+      sctx.restore();
+      continue;
+    }
+
     const color = rgbaWithAlpha(p.color, alpha);
     sctx.fillStyle = color;
     sctx.beginPath();
