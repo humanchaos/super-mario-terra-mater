@@ -1791,7 +1791,24 @@ function drawCutscenePanel() {
 
   sctx.fillStyle = "#ebf1ff";
   sctx.font = "20px Nunito";
-  sctx.fillText(cutscene.pages[cutscene.index], panelX + 30, panelY + 110);
+  const pageText = cutscene.pages[cutscene.index];
+  const maxTextW = panelW - 60;
+  const words = pageText.split(" ");
+  const textLines = [];
+  let currentLine = "";
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    if (sctx.measureText(testLine).width > maxTextW && currentLine) {
+      textLines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  }
+  if (currentLine) textLines.push(currentLine);
+  textLines.forEach((line, i) => {
+    sctx.fillText(line, panelX + 30, panelY + 82 + i * 26);
+  });
 
   const portraitRow = cutscene.portraits.slice(0, 6);
   portraitRow.forEach((portrait, i) => {
