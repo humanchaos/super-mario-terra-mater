@@ -411,11 +411,19 @@ function resetGame(fullReset = true) {
       "Digital is unreliable!",
       "I need to hold the pages!"
     ], "Okay, tablets for everyone. Less paper, more trees."),
-    enemy(3050, 438, 2960, 3320, "Producer: demands diesel generators on set", "commuter", 1.0, false, 1, [
+    enemy(3050, 438, 2960, 3320, "Wolle: we need those printouts", "wolle", 1.0, false, 1, [
+      "We need those printouts!!!",
+      "Nothing beats paper in your hand!"
+    ], "Fine, digital workflows from now on."),
+    enemy(3550, 438, 3460, 3780, "Producer: demands diesel generators on set", "commuter", 1.0, false, 1, [
       "Green power is too expensive!",
       "We need reliable generators!"
     ], "Hybrid power trucks accepted. Clean energy on every set."),
-    enemy(3920, 438, 3840, 4200, "Set designer: overuses single-use props", "thermostat", 0.95, false, 1, [
+    enemy(3920, 438, 3840, 4100, "TV: but we need our DOP to travel", "tv", 0.95, false, 1, [
+      "But we need our DOP to travel!",
+      "Remote cinematography is impossible!"
+    ], "Okay, local DOPs and streaming dailies it is."),
+    enemy(4280, 438, 4200, 4500, "Set designer: overuses single-use props", "thermostat", 0.95, false, 1, [
       "Reusable props look cheap!",
       "I need fresh materials!"
     ], "Sustainable prop workshop it is.")
@@ -2174,7 +2182,9 @@ function buildAtlas() {
     ["walter", "#ebbe9d", "#272727", "#2b2f3f", "#80848e"],
     ["markus", "#f2cfaa", "#4b3523", "#2f486e", "#7ac8ff"],
     ["commuter", "#f4cfb0", "#5d4037", "#7d3d8a", "#ce67e0"],
-    ["thermostat", "#f0c2a8", "#513024", "#b14141", "#ff9446"]
+    ["thermostat", "#f0c2a8", "#513024", "#b14141", "#ff9446"],
+    ["wolle", "#f5d4b5", "#6b4530", "#3a6b3a", "#a8d86c"],
+    ["tv", "#e8c5a0", "#2a2a2a", "#1a3a5c", "#4fc3f7"]
   ];
 
   enemyDefs.forEach((def, idx) => {
