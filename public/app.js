@@ -709,13 +709,16 @@ function applyInput() {
   player.vx = 0;
   const physics = getPhysics();
 
-  if (keys.left) {
-    player.vx = -physics.speed;
-    player.facing = -1;
-  }
-  if (keys.right) {
-    player.vx = physics.speed;
-    player.facing = 1;
+  // Freeze movement during mini-games so key mashing doesn't push player off edges
+  if (!miniGame) {
+    if (keys.left) {
+      player.vx = -physics.speed;
+      player.facing = -1;
+    }
+    if (keys.right) {
+      player.vx = physics.speed;
+      player.facing = 1;
+    }
   }
 
   if (keys.up && player.onGround) {
