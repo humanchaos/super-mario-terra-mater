@@ -443,7 +443,7 @@ function resetGame(fullReset = true) {
       "No one must tell me how to live!",
       "My lifestyle is my business!"
     ], "Okay, maybe leading by example works better than rules."),
-    enemy(5800, 410, 5500, 6400, "Laziness & Complacency: the final obstacle", "finalboss", 0.6, true, 8, [
+    enemy(5800, 410, 5500, 6400, "Laziness & Complacency: the final obstacle", "finalboss", 0.6, true, 12, [
       "Why change? Everything works fine!",
       "This is how we always did it!",
       "Transformation is too exhausting!",
@@ -865,7 +865,7 @@ function handleEnemies() {
     if (mob.type === "finalboss" && mob.alive) {
       if (!mob.barrelTimer) mob.barrelTimer = 0;
       mob.barrelTimer += 1;
-      if (mob.barrelTimer >= 90) {
+      if (mob.barrelTimer >= 75) {
         mob.barrelTimer = 0;
         const dirX = player.x < mob.x ? -3.5 : 3.5;
         particles.push({
@@ -900,8 +900,37 @@ function handleEnemies() {
         morale = clamp(morale + 2, 0, 100);
         carbonEmitted = clamp(carbonEmitted - 3.2, 0, 100);
         spawnSparkle(mob.x + mob.width / 2, mob.y + mob.height / 2, "rgba(255,167,108,1)");
-        spawnDialogue(`Boss hit! ${mob.hp} phases left.`, mob.x - 20, mob.y - 18, "rgba(255,209,164,1)");
         sound.bossHit();
+
+        // Team attack: allies and guardians rush in to support Mario
+        if (mob.type === "finalboss") {
+          let teamDamage = 0;
+          // Allies attack
+          for (const ally of allies) {
+            spawnSparkle(mob.x + (Math.random() - 0.5) * 40, mob.y + (Math.random() - 0.5) * 30, ally.color || "rgba(145,196,255,1)");
+            teamDamage += 1;
+          }
+          // Guardians attack
+          for (const g of guardians.members) {
+            spawnSparkle(mob.x + (Math.random() - 0.5) * 50, mob.y + (Math.random() - 0.5) * 40, g.color);
+            teamDamage += 1;
+          }
+          // Support team attacks
+          for (const s of supportTeam.members) {
+            spawnSparkle(mob.x + (Math.random() - 0.5) * 50, mob.y + (Math.random() - 0.5) * 40, s.color);
+            teamDamage += 1;
+          }
+          // Apply team damage: 1 HP per 2 team members
+          const bonusDmg = Math.floor(teamDamage / 2);
+          if (bonusDmg > 0) {
+            mob.hp = Math.max(1, mob.hp - bonusDmg);
+            spawnDialogue(`Team attack! -${bonusDmg + 1} HP! ${mob.hp} left!`, mob.x - 30, mob.y - 30, "rgba(255,220,120,1)");
+          } else {
+            spawnDialogue(`Boss hit! ${mob.hp} phases left.`, mob.x - 20, mob.y - 18, "rgba(255,209,164,1)");
+          }
+        } else {
+          spawnDialogue(`Boss hit! ${mob.hp} phases left.`, mob.x - 20, mob.y - 18, "rgba(255,209,164,1)");
+        }
       } else {
         convertEnemyToAlly(mob);
         player.vy = -8;
@@ -990,6 +1019,7 @@ function handleFlag() {
     startEndingEpilogueCutscene(ending);
     sound.win();
     updateHud();
+    promptHiscore();
   }
 }
 
@@ -1965,6 +1995,35 @@ function drawCutscenePanel() {
   sctx.fillText(`Panel ${cutscene.index + 1}/${cutscene.pages.length} - Press Enter/Space`, panelX + 24, panelY + panelH - 24);
 }
 
+// === HISCORE SYSTEM ===
+function calculateScore() {
+  const greenness = Math.round(getGreennessFactor() * 100);
+  return player.credits * 10 + allies.length * 50 + greenness * 3 + player.lives * 100;
+}
+
+function getHiscores() {
+  try {
+    return JSON.parse(localStorage.getItem("tms_hiscores") || "[]");
+  } catch { return []; }
+}
+
+function saveHiscore(name, score) {
+  const scores = getHiscores();
+  scores.push({ name: name.substring(0, 16), score, date: new Date().toISOString().slice(0, 10) });
+  scores.sort((a, b) => b.score - a.score);
+  localStorage.setItem("tms_hiscores", JSON.stringify(scores.slice(0, 10)));
+}
+
+function promptHiscore() {
+  const score = calculateScore();
+  setTimeout(() => {
+    const name = prompt(`🏆 Your score: ${score} pts!\nEnter your name for the leaderboard:`);
+    if (name && name.trim()) {
+      saveHiscore(name.trim(), score);
+    }
+  }, 500);
+}
+
 function drawOverlay() {
   if (cutscene && cutscene.active) return;
   if (!gameWon && !gameLost) return;
@@ -1976,16 +2035,32 @@ function drawOverlay() {
   if (gameWon) {
     sctx.fillStyle = "#e9ffef";
     sctx.font = "24px 'Press Start 2P'";
-    sctx.fillText("TRANSFORMATION COMPLETE", canvas.width / 2, canvas.height / 2 - 22);
+    sctx.fillText("TRANSFORMATION COMPLETE", canvas.width / 2, canvas.height / 2 - 60);
     sctx.font = "16px Nunito";
-    sctx.fillText(endingText, canvas.width / 2, canvas.height / 2 + 10);
-    sctx.fillText("Parade mode active. Press P for photo mode, C to capture.", canvas.width / 2, canvas.height / 2 + 34);
+    sctx.fillText(endingText, canvas.width / 2, canvas.height / 2 - 30);
+    sctx.fillText("Parade mode active. Press P for photo mode, C to capture.", canvas.width / 2, canvas.height / 2 - 10);
   } else {
     sctx.fillStyle = "#ffe8e8";
     sctx.font = "28px 'Press Start 2P'";
-    sctx.fillText("PROGRAM FAILED", canvas.width / 2, canvas.height / 2 - 12);
+    sctx.fillText("PROGRAM FAILED", canvas.width / 2, canvas.height / 2 - 50);
     sctx.font = "18px Nunito";
-    sctx.fillText("Resistance won this round. Press R to restart.", canvas.width / 2, canvas.height / 2 + 24);
+    sctx.fillText("Resistance won this round. Press R to restart.", canvas.width / 2, canvas.height / 2 - 20);
+  }
+
+  // Draw hiscore leaderboard
+  const scores = getHiscores();
+  if (scores.length > 0) {
+    const lbY = canvas.height / 2 + 16;
+    sctx.fillStyle = "rgba(255,215,80,0.95)";
+    sctx.font = "bold 14px 'Press Start 2P'";
+    sctx.fillText("🏆 HIGH SCORES", canvas.width / 2, lbY);
+    sctx.font = "13px Nunito";
+    for (let i = 0; i < Math.min(5, scores.length); i++) {
+      const s = scores[i];
+      const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
+      sctx.fillStyle = i === 0 ? "#ffd700" : i === 1 ? "#c0c0c0" : i === 2 ? "#cd7f32" : "#ddd";
+      sctx.fillText(`${medal} ${s.name} — ${s.score} pts`, canvas.width / 2, lbY + 22 + i * 20);
+    }
   }
 
   sctx.textAlign = "left";
