@@ -427,7 +427,11 @@ function resetGame(fullReset = true) {
       "But we need our DOP to travel!",
       "Remote cinematography is impossible!"
     ], "Okay, local DOPs and streaming dailies it is."),
-    enemy(4280, 438, 4200, 4500, "Set designer: overuses single-use props", "thermostat", 0.95, false, 1, [
+    enemy(4150, 438, 4080, 4350, "Crew member: waste separation? why?", "waste", 0.9, false, 1, [
+      "Waste separation? Why?",
+      "One bin for everything is easier!"
+    ], "Okay, color-coded bins on every set from now on."),
+    enemy(4420, 438, 4350, 4600, "Set designer: overuses single-use props", "thermostat", 0.95, false, 1, [
       "Reusable props look cheap!",
       "I need fresh materials!"
     ], "Sustainable prop workshop it is."),
@@ -2240,6 +2244,7 @@ function buildAtlas() {
     ["thermostat", "#f0c2a8", "#513024", "#b14141", "#ff9446"],
     ["wolle", "#f5d4b5", "#6b4530", "#3a6b3a", "#a8d86c"],
     ["tv", "#e8c5a0", "#2a2a2a", "#1a3a5c", "#4fc3f7"],
+    ["waste", "#f2d0b0", "#3b2818", "#5a7a3a", "#8bc34a"],
     ["finalboss", "#8b4513", "#2a0a0a", "#4a0e0e", "#ff2222"]
   ];
 
