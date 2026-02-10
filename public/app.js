@@ -439,6 +439,10 @@ function resetGame(fullReset = true) {
       "Reusable props look cheap!",
       "I need fresh materials!"
     ], "Sustainable prop workshop it is."),
+    enemy(4900, 438, 4800, 5100, "Freedomfighter: No one tells me how to live!", "freedomfighter", 1.1, false, 1, [
+      "No one must tell me how to live!",
+      "My lifestyle is my business!"
+    ], "Okay, maybe leading by example works better than rules."),
     enemy(5800, 410, 5500, 6400, "Laziness & Complacency: the final obstacle", "finalboss", 0.6, true, 8, [
       "Why change? Everything works fine!",
       "This is how we always did it!",
@@ -529,7 +533,7 @@ function enemy(x, y, minX, maxX, label, type, speed, boss, hp, lines, convertedL
     converted: false,
     introduced: false,
     phase: Math.random() * Math.PI * 2,
-    talkCooldown: 140 + Math.floor(Math.random() * 220)
+    talkCooldown: 280 + Math.floor(Math.random() * 440)
   };
 }
 
@@ -881,7 +885,7 @@ function handleEnemies() {
 
     mob.talkCooldown -= 1;
     if (mob.talkCooldown <= 0) {
-      mob.talkCooldown = 180 + Math.floor(Math.random() * 220);
+      mob.talkCooldown = 360 + Math.floor(Math.random() * 440);
       const line = mob.lines[Math.floor(Math.random() * mob.lines.length)];
       spawnDialogue(line, mob.x - 26, mob.y - 12, "rgba(255,245,220,1)");
     }
@@ -2441,6 +2445,23 @@ function buildAtlas() {
     ["support_elisa", "#ffb4c8", "#8f3050", "EL"],
     ["support_alex", "#b4dcff", "#2d4f8f", "AL"]
   ];
+
+  const enemyExtraDefs = [
+    ["freedomfighter", "#e85050", "#7a2020", "FR"]
+  ];
+
+  enemyExtraDefs.forEach((eDef, i) => {
+    const [name, c1, c2, txt] = eDef;
+    const s = slot(i + 20, 14, 32, 32);
+    drawPanelRect(s.x, s.y, s.w, s.h, c1, c2);
+    a.fillStyle = "rgba(255,255,255,0.28)";
+    a.fillRect(s.x + 3, s.y + 3, s.w - 6, 2);
+    a.fillStyle = "#1f2940";
+    a.font = "bold 12px monospace";
+    a.fillText(txt, s.x + 9, s.y + 19);
+    if (!map.enemies) map.enemies = {};
+    map.enemies[name] = [s];
+  });
 
   supportDefs.forEach((sDef, i) => {
     const [name, c1, c2, txt] = sDef;
