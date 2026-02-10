@@ -340,9 +340,10 @@ function resetGame(fullReset = true) {
   guardians = {
     active: false,
     cooldown: 0,
+    introduced: false,
     members: [
-      { name: "Josy", x: playerStart.x - 26, y: playerStart.y - 60, phase: 0, color: "rgba(138,232,173,1)" },
-      { name: "Nina", x: playerStart.x + 26, y: playerStart.y - 60, phase: Math.PI, color: "rgba(145,196,255,1)" }
+      { name: "Josy", x: playerStart.x - 26, y: playerStart.y - 60, phase: 0, color: "rgba(138,232,173,1)", introduced: false, introLine: "Josy: I will protect you on this journey!" },
+      { name: "Nina", x: playerStart.x + 26, y: playerStart.y - 60, phase: Math.PI, color: "rgba(145,196,255,1)", introduced: false, introLine: "Nina: Together we can make a difference!" }
     ]
   };
 
@@ -350,14 +351,16 @@ function resetGame(fullReset = true) {
     active: false,
     assistTick: 90,
     cleanTick: 210,
-    members: [
-      { name: "Irene", type: "support_irene", x: playerStart.x - 70, y: playerStart.y - 24, phase: 0, role: "warrior", color: "rgba(218,171,255,1)" },
-      { name: "Sirna", type: "support_sirna", x: playerStart.x - 96, y: playerStart.y - 20, phase: Math.PI / 2, role: "warrior", color: "rgba(141,216,255,1)" },
-      { name: "Denise", type: "support_denise", x: playerStart.x - 122, y: playerStart.y - 16, phase: Math.PI, role: "warrior", color: "rgba(156,245,191,1)" },
-      { name: "Susanne", type: "support_susanne", x: playerStart.x - 136, y: playerStart.y - 14, phase: Math.PI * 1.2, role: "warrior", color: "rgba(255,196,228,1)" },
-      { name: "Traude", type: "support_traude", x: playerStart.x - 142, y: playerStart.y - 10, phase: Math.PI * 1.3, role: "warrior", color: "rgba(187,224,255,1)" },
-      { name: "Roland", type: "support_roland", x: playerStart.x - 148, y: playerStart.y - 12, phase: Math.PI * 1.4, role: "cleaner", color: "rgba(255,220,152,1)" }
-    ]
+    revealedCount: 0,
+    allMembers: [
+      { name: "Irene", type: "support_irene", x: playerStart.x - 70, y: playerStart.y - 24, phase: 0, role: "warrior", color: "rgba(218,171,255,1)", introduced: false, introLine: "Irene: My expertise is at your service!" },
+      { name: "Sirna", type: "support_sirna", x: playerStart.x - 96, y: playerStart.y - 20, phase: Math.PI / 2, role: "warrior", color: "rgba(141,216,255,1)", introduced: false, introLine: "Sirna: Let me help tackle these blockers!" },
+      { name: "Denise", type: "support_denise", x: playerStart.x - 122, y: playerStart.y - 16, phase: Math.PI, role: "warrior", color: "rgba(156,245,191,1)", introduced: false, introLine: "Denise: Count me in for the green shift!" },
+      { name: "Susanne", type: "support_susanne", x: playerStart.x - 136, y: playerStart.y - 14, phase: Math.PI * 1.2, role: "warrior", color: "rgba(255,196,228,1)", introduced: false, introLine: "Susanne: I will handle communications!" },
+      { name: "Traude", type: "support_traude", x: playerStart.x - 142, y: playerStart.y - 10, phase: Math.PI * 1.3, role: "warrior", color: "rgba(187,224,255,1)", introduced: false, introLine: "Traude: Strategy is my middle name!" },
+      { name: "Roland", type: "support_roland", x: playerStart.x - 148, y: playerStart.y - 12, phase: Math.PI * 1.4, role: "cleaner", color: "rgba(255,220,152,1)", introduced: false, introLine: "Roland: I will clean up the carbon mess!" }
+    ],
+    members: []
   };
 
   storm = {
@@ -1012,10 +1015,7 @@ function loseLife() {
   morale = clamp(morale - 14, 0, 100);
 
   if (player.lives <= 1 && !guardians.active) {
-    guardians.active = true;
-    spawnSparkle(player.x, player.y, "rgba(138,232,173,1)");
-    spawnSparkle(player.x + player.width, player.y, "rgba(145,196,255,1)");
-    spawnDialogue("Josy and Nina: We are here.", player.x - 35, player.y - 26, "rgba(191,238,255,1)");
+    activateGuardians();
   }
 
   if (player.lives <= 0) {
@@ -1054,10 +1054,44 @@ function convertEnemyToAlly(mob) {
 function updateAllies() {
   allies.forEach((ally, index) => {
     const targetX = player.x - (index + 1) * 42;
-    const targetY = player.y + 2 + Math.sin(frame * 0.08 + index) * 2;
+    const targetY = player.y + 2 + Math.sin(frame * 0.04 + index) * 2;
     ally.x += (targetX - ally.x) * 0.12;
     ally.y += (targetY - ally.y) * 0.18;
-    ally.phase += 0.08;
+    ally.phase += 0.04;
+  });
+
+  // Activate guardians after first ally is converted
+  if (allies.length >= 1 && !guardians.active) {
+    activateGuardians();
+  }
+
+  // Gradually reveal support team members as more allies join
+  if (allies.length >= 2 && !supportTeam.active) {
+    supportTeam.active = true;
+  }
+  if (supportTeam.active) {
+    const targetCount = Math.min(supportTeam.allMembers.length, allies.length);
+    while (supportTeam.revealedCount < targetCount) {
+      const member = supportTeam.allMembers[supportTeam.revealedCount];
+      supportTeam.members.push(member);
+      supportTeam.revealedCount += 1;
+      if (!member.introduced) {
+        member.introduced = true;
+        spawnDialogue(member.introLine, player.x - 40, player.y - 30 - supportTeam.revealedCount * 8, member.color);
+        spawnSparkle(player.x, player.y - 10, member.color);
+      }
+    }
+  }
+}
+
+function activateGuardians() {
+  guardians.active = true;
+  guardians.members.forEach((guardian) => {
+    if (!guardian.introduced) {
+      guardian.introduced = true;
+      spawnDialogue(guardian.introLine, player.x - 35, player.y - 26, guardian.color);
+      spawnSparkle(player.x, player.y, guardian.color);
+    }
   });
 }
 
@@ -1065,7 +1099,7 @@ function updateGuardians() {
   if (!guardians.active) return;
   guardians.cooldown = Math.max(0, guardians.cooldown - 1);
   guardians.members.forEach((guardian, i) => {
-    guardian.phase += 0.04 + i * 0.01;
+    guardian.phase += 0.018 + i * 0.004;
     const radius = 34 + i * 8;
     guardian.x = player.x + player.width / 2 + Math.cos(guardian.phase) * radius;
     guardian.y = player.y - 18 + Math.sin(guardian.phase * 1.2) * 14;
@@ -1073,27 +1107,14 @@ function updateGuardians() {
 }
 
 function maybeActivateSupportTeam() {
-  if (supportTeam.active) return;
-  const activeBossPressure = enemies
-    .filter((mob) => mob.alive && mob.boss)
-    .reduce((sum, mob) => sum + mob.hp, 0);
-  const activeAdversaries = enemies.filter((mob) => mob.alive).length;
-  const pressureHigh = activeBossPressure >= 3 || activeAdversaries >= 3;
-  const dire = player.lives <= 2 || morale < 45 || carbonEmitted > 72;
-
-  if (pressureHigh && dire) {
-    supportTeam.active = true;
-    supportTeam.assistTick = 40;
-    supportTeam.cleanTick = 140;
-    spawnDialogue("Irene, Sirna, Denise and Roland: We have your back!", player.x - 52, player.y - 34, "rgba(210,235,255,1)");
-  }
+  // Support team now activates gradually via updateAllies based on ally count
 }
 
 function updateSupportTeam() {
-  if (!supportTeam.active) return;
+  if (!supportTeam.active || supportTeam.members.length === 0) return;
 
   supportTeam.members.forEach((member, i) => {
-    member.phase += 0.045 + i * 0.01;
+    member.phase += 0.02 + i * 0.004;
     const radius = 58 + i * 16;
     member.x = player.x + player.width / 2 - 24 + Math.cos(member.phase) * radius;
     member.y = player.y - 8 + Math.sin(member.phase * 1.25) * (10 + i * 1.5);
@@ -1479,10 +1500,13 @@ function drawGuardians() {
 
   guardians.members.forEach((guardian, i) => {
     const drawX = guardian.x - cameraX;
-    const frameIdx = Math.floor(frame / 8 + i * 2) % guardianFrames.length;
+    const frameIdx = Math.floor(frame / 18 + i * 2) % guardianFrames.length;
     const sprite = guardianFrames[frameIdx];
     drawAtlas(sprite, drawX - 18, guardian.y - 18, 36, 36);
     glowWorld(guardian.x, guardian.y, 22, rgbaWithAlpha(guardian.color, 0.45));
+    sctx.fillStyle = "rgba(255,255,255,0.9)";
+    sctx.font = "11px Nunito";
+    sctx.fillText(guardian.name, drawX - 10, guardian.y - 22);
   });
 }
 
@@ -1562,28 +1586,7 @@ function drawDialogues() {
     visible.push({ text: p.text, accent, alpha, life: p.life });
   }
 
-  visible.sort((a, b) => b.life - a.life);
-  const subtitles = visible.slice(0, 2);
-  subtitles.forEach((item, idx) => {
-    const y = 20 + idx * 42;
-    const padX = 12;
-    const maxW = canvas.width - 40;
-    sctx.font = "900 20px Nunito";
-    let text = item.text;
-    while (sctx.measureText(text).width > maxW && text.length > 12) {
-      text = `${text.slice(0, -2)}...`;
-    }
-    const w = sctx.measureText(text).width + padX * 2;
-    sctx.fillStyle = "rgba(244, 248, 238, 0.98)";
-    roundedRect(sctx, 20, y, w, 30, 8);
-    sctx.fill();
-    sctx.strokeStyle = "rgba(12,18,28,0.92)";
-    sctx.lineWidth = 2;
-    roundedRect(sctx, 20, y, w, 30, 8);
-    sctx.stroke();
-    sctx.fillStyle = "rgba(0,0,0,1)";
-    sctx.fillText(text, 20 + padX, y + 21);
-  });
+
 }
 
 function drawMiniGameOverlay() {
