@@ -91,6 +91,70 @@ canvas {
   margin: 6px 0;
 }
 
+.leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 2px solid #ffd053;
+  background: linear-gradient(180deg, #1a3870, #0f2960);
+  color: #fff9dd;
+  font-family: "Nunito", sans-serif;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.lb-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: "Press Start 2P", cursive;
+  font-size: 0.6rem;
+}
+
+.lb-header input {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 208, 83, 0.5);
+  border-radius: 4px;
+  color: #fff;
+  padding: 3px 6px;
+  font-family: "Nunito", sans-serif;
+  font-size: 0.8rem;
+  width: 120px;
+}
+
+.lb-header label {
+  font-family: "Nunito", sans-serif;
+  font-size: 0.75rem;
+}
+
+#lb-entries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 0.82rem;
+}
+
+#lb-entries .lb-entry {
+  white-space: nowrap;
+}
+
+#lb-entries .lb-gold {
+  color: #ffd700;
+  font-weight: 800;
+}
+
+#lb-entries .lb-silver {
+  color: #c0c0c0;
+  font-weight: 700;
+}
+
+#lb-entries .lb-bronze {
+  color: #cd7f32;
+  font-weight: 700;
+}
+
 .controls {
   font-size: 0.92rem;
 }
@@ -136,9 +200,20 @@ canvas {
   border-color: rgba(255, 255, 255, 0.9);
 }
 
-#btn-left  { bottom: 20px; left: 16px; }
-#btn-right { bottom: 20px; left: 96px; }
-#btn-jump  { bottom: 20px; right: 16px; }
+#btn-left {
+  bottom: 20px;
+  left: 16px;
+}
+
+#btn-right {
+  bottom: 20px;
+  left: 96px;
+}
+
+#btn-jump {
+  bottom: 20px;
+  right: 16px;
+}
 
 #landscape-hint {
   display: none;
@@ -176,7 +251,8 @@ canvas {
     box-shadow: none;
   }
 
-  header, .hud-bottom {
+  header,
+  .hud-bottom {
     display: none;
   }
 
@@ -199,9 +275,20 @@ canvas {
     font-size: 20px;
   }
 
-  #btn-left  { bottom: 12px; left: 12px; }
-  #btn-right { bottom: 12px; left: 80px; }
-  #btn-jump  { bottom: 12px; right: 12px; }
+  #btn-left {
+    bottom: 12px;
+    left: 12px;
+  }
+
+  #btn-right {
+    bottom: 12px;
+    left: 80px;
+  }
+
+  #btn-jump {
+    bottom: 12px;
+    right: 12px;
+  }
 }
 
 /* Portrait mobile: show landscape hint */

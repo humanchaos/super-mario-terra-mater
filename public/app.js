@@ -324,6 +324,7 @@ function resetGame(fullReset = true) {
   endingText = "";
   endingKey = "compliance";
   cutscene = null;
+  gameStartTime = Date.now();
 
   carbonEmitted = 68;
   morale = 56;
@@ -1996,9 +1997,13 @@ function drawCutscenePanel() {
 }
 
 // === HISCORE SYSTEM ===
+let gameStartTime = Date.now();
+
 function calculateScore() {
   const greenness = Math.round(getGreennessFactor() * 100);
-  return player.credits * 10 + allies.length * 50 + greenness * 3 + player.lives * 100;
+  const elapsed = (Date.now() - gameStartTime) / 1000; // seconds
+  const timeBonus = Math.max(0, Math.round(500 - elapsed * 0.8)); // faster = more points
+  return player.credits * 10 + allies.length * 50 + greenness * 3 + player.lives * 100 + timeBonus;
 }
 
 function getHiscores() {
@@ -2014,15 +2019,33 @@ function saveHiscore(name, score) {
   localStorage.setItem("tms_hiscores", JSON.stringify(scores.slice(0, 10)));
 }
 
+function getPlayerName() {
+  const input = document.getElementById("playerName");
+  return (input && input.value.trim()) || "Player";
+}
+
 function promptHiscore() {
   const score = calculateScore();
-  setTimeout(() => {
-    const name = prompt(`🏆 Your score: ${score} pts!\nEnter your name for the leaderboard:`);
-    if (name && name.trim()) {
-      saveHiscore(name.trim(), score);
-    }
-  }, 500);
+  saveHiscore(getPlayerName(), score);
+  renderLeaderboard();
 }
+
+function renderLeaderboard() {
+  const el = document.getElementById("lb-entries");
+  if (!el) return;
+  const scores = getHiscores();
+  if (scores.length === 0) { el.textContent = "No scores yet"; return; }
+  const medals = ["🥇", "🥈", "🥉"];
+  const cls = ["lb-gold", "lb-silver", "lb-bronze"];
+  el.innerHTML = scores.slice(0, 5).map((s, i) => {
+    const m = i < 3 ? medals[i] : `${i + 1}.`;
+    const c = i < 3 ? cls[i] : "";
+    return `<span class="lb-entry ${c}">${m} ${s.name} — ${s.score}pts</span>`;
+  }).join("");
+}
+
+// Render on load
+renderLeaderboard();
 
 function drawOverlay() {
   if (cutscene && cutscene.active) return;
