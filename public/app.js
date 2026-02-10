@@ -1996,27 +1996,71 @@ function drawCutscenePanel() {
   sctx.fillText(`Panel ${cutscene.index + 1}/${cutscene.pages.length} - Press Enter/Space`, panelX + 24, panelY + panelH - 24);
 }
 
-// === HISCORE SYSTEM ===
+// === SHARED HISCORE SYSTEM (Firebase Realtime Database) ===
+// ⚠️  Set this to your Firebase Realtime Database URL (see setup instructions)
+const FIREBASE_DB_URL = "https://terra-mater-mario-default-rtdb.europe-west1.firebasedatabase.app";
+
 let gameStartTime = Date.now();
+let sharedScores = []; // cached scores for canvas overlay + getHiscores()
 
 function calculateScore() {
   const greenness = Math.round(getGreennessFactor() * 100);
-  const elapsed = (Date.now() - gameStartTime) / 1000; // seconds
-  const timeBonus = Math.max(0, Math.round(500 - elapsed * 0.8)); // faster = more points
+  const elapsed = (Date.now() - gameStartTime) / 1000;
+  const timeBonus = Math.max(0, Math.round(500 - elapsed * 0.8));
   return player.credits * 10 + allies.length * 50 + greenness * 3 + player.lives * 100 + timeBonus;
 }
 
-function getHiscores() {
-  try {
-    return JSON.parse(localStorage.getItem("tms_hiscores") || "[]");
-  } catch { return []; }
+// --- localStorage fallback ---
+function getLocalScores() {
+  try { return JSON.parse(localStorage.getItem("tms_hiscores") || "[]"); }
+  catch { return []; }
 }
-
-function saveHiscore(name, score) {
-  const scores = getHiscores();
+function saveLocalScore(name, score) {
+  const scores = getLocalScores();
   scores.push({ name: name.substring(0, 16), score, date: new Date().toISOString().slice(0, 10) });
   scores.sort((a, b) => b.score - a.score);
   localStorage.setItem("tms_hiscores", JSON.stringify(scores.slice(0, 10)));
+}
+
+// --- Firebase REST API ---
+async function fetchLeaderboard() {
+  try {
+    const url = `${FIREBASE_DB_URL}/scores.json?orderBy="score"&limitToLast=10`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error("firebase error");
+    const data = await resp.json();
+    if (data && typeof data === "object") {
+      sharedScores = Object.values(data)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10);
+    } else {
+      sharedScores = [];
+    }
+  } catch {
+    sharedScores = getLocalScores();
+  }
+  renderLeaderboard();
+}
+
+async function submitScore(name, score) {
+  // Always save locally as backup
+  saveLocalScore(name, score);
+  const entry = {
+    name: name.substring(0, 16),
+    score: Math.round(score),
+    date: new Date().toISOString().slice(0, 10)
+  };
+  try {
+    const resp = await fetch(`${FIREBASE_DB_URL}/scores.json`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(entry)
+    });
+    if (!resp.ok) throw new Error("submit failed");
+  } catch {
+    // localStorage fallback already saved above
+  }
+  await fetchLeaderboard();
 }
 
 function getPlayerName() {
@@ -2026,14 +2070,17 @@ function getPlayerName() {
 
 function promptHiscore() {
   const score = calculateScore();
-  saveHiscore(getPlayerName(), score);
-  renderLeaderboard();
+  submitScore(getPlayerName(), score);
+}
+
+function getHiscores() {
+  return sharedScores;
 }
 
 function renderLeaderboard() {
   const el = document.getElementById("lb-entries");
   if (!el) return;
-  const scores = getHiscores();
+  const scores = sharedScores;
   if (scores.length === 0) { el.textContent = "No scores yet"; return; }
   const medals = ["🥇", "🥈", "🥉"];
   const cls = ["lb-gold", "lb-silver", "lb-bronze"];
@@ -2044,8 +2091,9 @@ function renderLeaderboard() {
   }).join("");
 }
 
-// Render on load
-renderLeaderboard();
+// Fetch scores on load, then poll every 30s for live updates
+fetchLeaderboard();
+setInterval(fetchLeaderboard, 30000);
 
 function drawOverlay() {
   if (cutscene && cutscene.active) return;

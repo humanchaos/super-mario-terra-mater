@@ -105,5 +105,5 @@ app.post("/api/search", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`EarthCARE MVP running on http://localhost:${PORT}`);
+  console.log(`Super Mario Terra Mater running on http://localhost:${PORT}`);
 });
