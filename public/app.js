@@ -379,7 +379,8 @@ function resetGame(fullReset = true) {
     { x: 2220, y: GROUND_Y, width: 810, height: 100, type: "ground" },
     { x: 3130, y: GROUND_Y, width: 780, height: 100, type: "ground" },
     { x: 4020, y: GROUND_Y, width: 610, height: 100, type: "ground" },
-    { x: 4700, y: GROUND_Y, width: 900, height: 100, type: "ground" },
+    { x: 4700, y: GROUND_Y, width: 600, height: 100, type: "ground" },
+    { x: 5400, y: GROUND_Y, width: 1200, height: 100, type: "ground" },
     { x: 290, y: 375, width: 120, height: 16, type: "block" },
     { x: 530, y: 330, width: 110, height: 16, type: "block" },
     { x: 1060, y: 365, width: 140, height: 16, type: "block" },
@@ -389,7 +390,10 @@ function resetGame(fullReset = true) {
     { x: 2690, y: 300, width: 120, height: 16, type: "block" },
     { x: 3340, y: 350, width: 130, height: 16, type: "block" },
     { x: 4300, y: 340, width: 150, height: 16, type: "block" },
-    { x: 4860, y: 310, width: 130, height: 16, type: "block" }
+    { x: 4860, y: 310, width: 130, height: 16, type: "block" },
+    { x: 5600, y: 370, width: 160, height: 16, type: "block" },
+    { x: 5900, y: 330, width: 140, height: 16, type: "block" },
+    { x: 6200, y: 360, width: 130, height: 16, type: "block" }
   ];
 
   credits = [
@@ -426,7 +430,13 @@ function resetGame(fullReset = true) {
     enemy(4280, 438, 4200, 4500, "Set designer: overuses single-use props", "thermostat", 0.95, false, 1, [
       "Reusable props look cheap!",
       "I need fresh materials!"
-    ], "Sustainable prop workshop it is.")
+    ], "Sustainable prop workshop it is."),
+    enemy(5800, 410, 5500, 6400, "Laziness & Complacency: the final obstacle", "finalboss", 0.6, true, 8, [
+      "Why change? Everything works fine!",
+      "This is how we always did it!",
+      "Transformation is too exhausting!",
+      "The comfort zone is warm and cozy!"
+    ], "We were wrong. Real courage means leaving the comfort zone.")
   ];
 
   gates = [
@@ -435,7 +445,7 @@ function resetGame(fullReset = true) {
     gate(4610, "The Final Test — Win over the last holdouts", 10, 2)
   ];
 
-  flags = [{ x: 5480, y: 300, width: 24, height: 170 }];
+  flags = [{ x: 6480, y: 300, width: 24, height: 170 }];
 
   powerups = [
     pickup(950, 332, "solar", "Solar Shield"),
@@ -490,11 +500,12 @@ function coin(x, y) {
 }
 
 function enemy(x, y, minX, maxX, label, type, speed, boss, hp, lines, convertedLine) {
+  const isFinal = type === "finalboss";
   return {
     x,
-    y,
-    width: boss ? 40 : 34,
-    height: boss ? 38 : 32,
+    y: isFinal ? y - 24 : y,
+    width: isFinal ? 70 : boss ? 40 : 34,
+    height: isFinal ? 64 : boss ? 38 : 32,
     vx: speed,
     minX,
     maxX,
@@ -980,17 +991,34 @@ function getEndingOutcome() {
 
 function startBossIntroCutscene(mob) {
   const label = mob.label.split(":")[0];
-  cutscene = {
-    active: true,
-    type: "boss_intro",
-    title: `${label} — A Major Adversary Appears`,
-    pages: [
+  const isFinalBoss = mob.type === "finalboss";
+
+  const pages = isFinalBoss
+    ? [
+      "A massive shadow blocks the path. It is Laziness & Complacency — the final obstacle.",
+      "This is the enemy that lives inside every company. It whispers: Why change?",
+      "But your entire team is here now. Guardians, allies, support — everyone stands together.",
+      "Jump on top repeatedly. It will take many hits. This is the ultimate test!"
+    ]
+    : [
       `${label} stands in the way of transformation.`,
       "Defeat all phases by jumping on top with precise timing.",
       "Every hero faces resistance. Press Enter to continue."
-    ],
+    ];
+
+  const portraits = [{ name: label, type: mob.type }, { name: "Mario", type: "mario" }];
+  if (isFinalBoss) {
+    guardians.members.forEach((g) => portraits.push({ name: g.name, type: "guardian_" + g.name.toLowerCase() }));
+    allies.slice(0, 3).forEach((a) => portraits.push({ name: a.name, type: a.type }));
+  }
+
+  cutscene = {
+    active: true,
+    type: "boss_intro",
+    title: isFinalBoss ? "FINAL BOSS — Laziness & Complacency" : `${label} — A Major Adversary Appears`,
+    pages,
     index: 0,
-    portraits: [{ name: label, type: mob.type }, { name: "Mario", type: "mario" }]
+    portraits
   };
   sound.bossIntro();
 }
@@ -1490,21 +1518,31 @@ function drawEnemies() {
     const bodyY = mob.y + bounce;
     const frames = atlas.enemies[mob.type] || atlas.enemies.toni;
     const anim = Math.floor(frame / 10 + Math.abs(mob.vx) * 2) % frames.length;
-    const w = mob.boss ? 46 : 38;
-    const h = mob.boss ? 44 : 36;
-    drawAtlas(frames[anim], drawX - 2, bodyY - 4, w, h);
+    const isFinal = mob.type === "finalboss";
+    const w = isFinal ? 80 : mob.boss ? 46 : 38;
+    const h = isFinal ? 76 : mob.boss ? 44 : 36;
+    drawAtlas(frames[anim], drawX - (isFinal ? 20 : 2), bodyY - (isFinal ? 36 : 4), w, h);
+
+    if (isFinal) {
+      sctx.fillStyle = `rgba(180,40,40,${0.15 + Math.sin(frame * 0.05) * 0.1})`;
+      sctx.beginPath();
+      sctx.arc(drawX + w / 2 - 20, bodyY + h / 2 - 36, 55, 0, Math.PI * 2);
+      sctx.fill();
+    }
 
     if (mob.boss) {
+      const isFinal = mob.type === "finalboss";
+      const barW = isFinal ? 100 : 60;
       sctx.fillStyle = "rgba(255,255,255,0.86)";
-      roundedRect(sctx, drawX - 4, bodyY - 20, 60, 8, 3);
+      roundedRect(sctx, drawX - 4, bodyY - 20, barW, 8, 3);
       sctx.fill();
-      sctx.fillStyle = "rgba(255,110,110,0.9)";
-      const width = (mob.hp / mob.maxHp) * 58;
+      sctx.fillStyle = isFinal ? "rgba(255,60,60,0.95)" : "rgba(255,110,110,0.9)";
+      const width = (mob.hp / mob.maxHp) * (barW - 2);
       roundedRect(sctx, drawX - 3, bodyY - 19, width, 6, 2);
       sctx.fill();
-      sctx.fillStyle = "#1f2940";
-      sctx.font = "10px Nunito";
-      sctx.fillText("Boardroom Boss", drawX - 2, bodyY - 24);
+      sctx.fillStyle = isFinal ? "#fff" : "#1f2940";
+      sctx.font = isFinal ? "bold 12px Nunito" : "10px Nunito";
+      sctx.fillText(isFinal ? "⚠ FINAL BOSS" : "Boardroom Boss", drawX - 2, bodyY - 24);
     }
   }
 }
@@ -2201,7 +2239,8 @@ function buildAtlas() {
     ["commuter", "#f4cfb0", "#5d4037", "#7d3d8a", "#ce67e0"],
     ["thermostat", "#f0c2a8", "#513024", "#b14141", "#ff9446"],
     ["wolle", "#f5d4b5", "#6b4530", "#3a6b3a", "#a8d86c"],
-    ["tv", "#e8c5a0", "#2a2a2a", "#1a3a5c", "#4fc3f7"]
+    ["tv", "#e8c5a0", "#2a2a2a", "#1a3a5c", "#4fc3f7"],
+    ["finalboss", "#8b4513", "#2a0a0a", "#4a0e0e", "#ff2222"]
   ];
 
   enemyDefs.forEach((def, idx) => {
