@@ -381,25 +381,25 @@ function resetGame(fullReset = true) {
     { x: 4020, y: GROUND_Y, width: 610, height: 100, type: "ground" },
     { x: 4700, y: GROUND_Y, width: 600, height: 100, type: "ground" },
     { x: 5400, y: GROUND_Y, width: 1200, height: 100, type: "ground" },
-    { x: 290, y: 375, width: 120, height: 16, type: "block" },
-    { x: 530, y: 330, width: 110, height: 16, type: "block" },
-    { x: 1060, y: 365, width: 140, height: 16, type: "block" },
-    { x: 1360, y: 320, width: 110, height: 16, type: "block" },
-    { x: 1840, y: 360, width: 120, height: 16, type: "block" },
-    { x: 2440, y: 350, width: 130, height: 16, type: "block" },
-    { x: 2690, y: 300, width: 120, height: 16, type: "block" },
-    { x: 3340, y: 350, width: 130, height: 16, type: "block" },
-    { x: 4300, y: 340, width: 150, height: 16, type: "block" },
-    { x: 4860, y: 310, width: 130, height: 16, type: "block" },
-    { x: 5600, y: 370, width: 160, height: 16, type: "block" },
-    { x: 5900, y: 330, width: 140, height: 16, type: "block" },
-    { x: 6200, y: 360, width: 130, height: 16, type: "block" }
+    { x: 290, y: 400, width: 120, height: 16, type: "block" },
+    { x: 530, y: 390, width: 110, height: 16, type: "block" },
+    { x: 1060, y: 400, width: 140, height: 16, type: "block" },
+    { x: 1360, y: 385, width: 110, height: 16, type: "block" },
+    { x: 1840, y: 395, width: 120, height: 16, type: "block" },
+    { x: 2440, y: 390, width: 130, height: 16, type: "block" },
+    { x: 2690, y: 380, width: 120, height: 16, type: "block" },
+    { x: 3340, y: 390, width: 130, height: 16, type: "block" },
+    { x: 4300, y: 395, width: 150, height: 16, type: "block" },
+    { x: 4860, y: 385, width: 130, height: 16, type: "block" },
+    { x: 5600, y: 400, width: 160, height: 16, type: "block" },
+    { x: 5900, y: 390, width: 140, height: 16, type: "block" },
+    { x: 6200, y: 395, width: 130, height: 16, type: "block" }
   ];
 
   credits = [
-    coin(330, 335), coin(560, 290), coin(610, 290), coin(1090, 325), coin(1140, 325),
-    coin(1380, 280), coin(1880, 320), coin(2470, 310), coin(2730, 260), coin(3380, 310),
-    coin(4340, 300), coin(4890, 270), coin(5200, 420)
+    coin(330, 360), coin(560, 350), coin(610, 350), coin(1090, 360), coin(1140, 360),
+    coin(1380, 345), coin(1880, 355), coin(2470, 350), coin(2730, 340), coin(3380, 350),
+    coin(4340, 355), coin(4890, 345), coin(5200, 420)
   ];
 
   enemies = [
