@@ -1,38 +1,47 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Super Mario - Terra Mater Studios Edition</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@600;800&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="styles.css?v=20260209b" />
-  </head>
-  <body>
-    <main class="game-shell">
-      <header>
-        <h1>Super Mario - Terra Mater Studios Edition</h1>
-        <p>
-          Help Mario lead sustainability transformation where former adversaries can become allies.
-        </p>
-      </header>
-      <section class="hud-top">
-        <div><span id="credits">0</span> Impact Credits</div>
-        <div>Lives: <span id="lives">3</span></div>
-        <div>Transformation: <span id="progress">0%</span></div>
-        <div>Carbon: <span id="carbon">0</span></div>
-        <div>Greenness: <span id="greenness">0%</span></div>
-      </section>
-      <canvas id="game" width="960" height="540" aria-label="Mario Sustainability Game"></canvas>
-      <section class="hud-bottom">
-        <p id="stageText">Act I: The Ordinary World — Another day at Terra Mater Studios.</p>
-        <p class="controls">Controls: A/D or Arrow keys run, W/Up/Space jump, Shift dash (with Wind), P photo mode, F filter, C capture, M mute, R restart.</p>
-      </section>
-    </main>
-    <script src="app.js?v=20260209b"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Super Mario - Terra Mater Studios Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@600;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=20260209b" />
+</head>
+
+<body>
+  <main class="game-shell">
+    <header>
+      <h1>Super Mario - Terra Mater Studios Edition</h1>
+      <p>
+        Help Mario lead sustainability transformation where former adversaries can become allies.
+      </p>
+    </header>
+    <section class="hud-top">
+      <div><span id="credits">0</span> Impact Credits</div>
+      <div>Lives: <span id="lives">3</span></div>
+      <div>Transformation: <span id="progress">0%</span></div>
+      <div>Carbon: <span id="carbon">0</span></div>
+      <div>Greenness: <span id="greenness">0%</span></div>
+    </section>
+    <canvas id="game" width="960" height="540" aria-label="Mario Sustainability Game"></canvas>
+    <section class="hud-bottom">
+      <p id="stageText">Act I: The Ordinary World — Another day at Terra Mater Studios.</p>
+      <p class="controls">Controls: A/D or Arrow keys run, W/Up/Space jump, Shift dash (with Wind), P photo mode, F
+        filter, C capture, M mute, R restart.</p>
+    </section>
+    <div id="touch-controls">
+      <button id="btn-left" aria-label="Move left">◀</button>
+      <button id="btn-right" aria-label="Move right">▶</button>
+      <button id="btn-jump" aria-label="Jump">▲</button>
+    </div>
+    <div id="landscape-hint">↻ Rotate to landscape mode</div>
+  </main>
+  <script src="app.js?v=20260209b"></script>
+</body>
+
 </html>

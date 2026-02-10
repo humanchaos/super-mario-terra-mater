@@ -361,7 +361,9 @@ function resetGame(fullReset = true) {
       { name: "Denise", type: "support_denise", x: playerStart.x - 122, y: playerStart.y - 16, phase: Math.PI, role: "warrior", color: "rgba(156,245,191,1)", introduced: false, introLine: "Denise: Count me in for the green shift!" },
       { name: "Susanne", type: "support_susanne", x: playerStart.x - 136, y: playerStart.y - 14, phase: Math.PI * 1.2, role: "warrior", color: "rgba(255,196,228,1)", introduced: false, introLine: "Susanne: I will handle communications!" },
       { name: "Traude", type: "support_traude", x: playerStart.x - 142, y: playerStart.y - 10, phase: Math.PI * 1.3, role: "warrior", color: "rgba(187,224,255,1)", introduced: false, introLine: "Traude: Strategy is my middle name!" },
-      { name: "Roland", type: "support_roland", x: playerStart.x - 148, y: playerStart.y - 12, phase: Math.PI * 1.4, role: "cleaner", color: "rgba(255,220,152,1)", introduced: false, introLine: "Roland: I will clean up the carbon mess!" }
+      { name: "Roland", type: "support_roland", x: playerStart.x - 148, y: playerStart.y - 12, phase: Math.PI * 1.4, role: "cleaner", color: "rgba(255,220,152,1)", introduced: false, introLine: "Roland: I will clean up the carbon mess!" },
+      { name: "Elisa", type: "support_elisa", x: playerStart.x - 154, y: playerStart.y - 8, phase: Math.PI * 1.5, role: "warrior", color: "rgba(255,180,200,1)", introduced: false, introLine: "Elisa: Yes, let's tell the story everywhere!" },
+      { name: "Alex", type: "support_alex", x: playerStart.x - 160, y: playerStart.y - 6, phase: Math.PI * 1.6, role: "warrior", color: "rgba(180,220,255,1)", introduced: false, introLine: "Alex: Yes, let's tell the story everywhere!" }
     ],
     members: []
   };
@@ -409,10 +411,10 @@ function resetGame(fullReset = true) {
       "Schnitzel is non-negotiable!",
       "Plant-based? Not today!"
     ], "Okay fine, I will test veggie Mondays."),
-    enemy(1370, 430, 1280, 1560, "CEO Walter: insists on flying the whole crew", "walter", 1.0, true, 3, [
-      "Budget over planet!",
-      "We always flew the crew!"
-    ], "Fine. Local crews + virtual scouting it is."),
+    enemy(1370, 430, 1280, 1560, "CEO Walter: I want my SUV!", "walter", 1.0, true, 3, [
+      "I need my SUV!",
+      "An EV is not a real car!"
+    ], "Fine. I will give the EV a try."),
     enemy(2190, 430, 2100, 2480, "Markus: prints every script on paper", "markus", 1.2, true, 3, [
       "Digital is unreliable!",
       "I need to hold the pages!"
@@ -2434,7 +2436,11 @@ function buildAtlas() {
     ["support_irene", "#dca8ff", "#6f4391", "IR"],
     ["support_sirna", "#99d8ff", "#2b6485", "SI"],
     ["support_denise", "#9ff2c2", "#2f7a57", "DE"],
-    ["support_roland", "#ffd69f", "#8f6231", "RO"]
+    ["support_susanne", "#ffc4e4", "#8f3168", "SU"],
+    ["support_traude", "#bbdfff", "#2d5a8f", "TR"],
+    ["support_roland", "#ffd69f", "#8f6231", "RO"],
+    ["support_elisa", "#ffb4c8", "#8f3050", "EL"],
+    ["support_alex", "#b4dcff", "#2d4f8f", "AL"]
   ];
 
   supportDefs.forEach((sDef, i) => {
@@ -2493,6 +2499,40 @@ window.addEventListener("keydown", keyDown);
 window.addEventListener("keyup", keyUp);
 window.addEventListener("pointerdown", () => sound.unlock(), { passive: true });
 window.addEventListener("touchstart", () => sound.unlock(), { passive: true });
+
+// Touch controls for mobile
+function setupTouchControls() {
+  const btnLeft = document.getElementById("btn-left");
+  const btnRight = document.getElementById("btn-right");
+  const btnJump = document.getElementById("btn-jump");
+  if (!btnLeft) return;
+
+  function prevent(e) { e.preventDefault(); }
+
+  btnLeft.addEventListener("touchstart", (e) => { prevent(e); keys.left = true; }, { passive: false });
+  btnLeft.addEventListener("touchend", (e) => { prevent(e); keys.left = false; }, { passive: false });
+  btnLeft.addEventListener("touchcancel", () => { keys.left = false; });
+
+  btnRight.addEventListener("touchstart", (e) => { prevent(e); keys.right = true; }, { passive: false });
+  btnRight.addEventListener("touchend", (e) => { prevent(e); keys.right = false; }, { passive: false });
+  btnRight.addEventListener("touchcancel", () => { keys.right = false; });
+
+  btnJump.addEventListener("touchstart", (e) => { prevent(e); keys.up = true; }, { passive: false });
+  btnJump.addEventListener("touchend", (e) => { prevent(e); keys.up = false; }, { passive: false });
+  btnJump.addEventListener("touchcancel", () => { keys.up = false; });
+
+  // Tap canvas to advance cutscenes
+  canvas.addEventListener("touchstart", (e) => {
+    if (cutscene && cutscene.active) {
+      e.preventDefault();
+      cutscene.index += 1;
+      if (cutscene.index >= cutscene.pages.length) {
+        cutscene.active = false;
+      }
+    }
+  }, { passive: false });
+}
+setupTouchControls();
 
 resetGame(true);
 tick();
